@@ -179,7 +179,7 @@ export default async function ConvocatoriaDetallePage({ params }: { params: { id
                                 <section className="space-y-8 pt-8 border-t border-slate-100">
                                     <h2 className="text-2xl font-bold text-slate-900">Perfil del estudiante</h2>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        {convocatoria.competencias_requeridas.map((item, idx) => (
+                                        {convocatoria.competencias_requeridas.map((item: string, idx: number) => (
                                             <div key={idx} className="flex items-start gap-3 bg-white p-5 rounded-xl border border-slate-100 shadow-sm transition-all hover:shadow-md">
                                                 <div className="bg-blue-50/50 p-2 rounded-lg shrink-0">
                                                     <CheckCircle2 className="w-4 h-4 text-blue-600" />
@@ -195,7 +195,7 @@ export default async function ConvocatoriaDetallePage({ params }: { params: { id
                                 <section className="space-y-8 pt-8 border-t border-slate-100">
                                     <h2 className="text-2xl font-bold text-slate-900">Plan de Actividades</h2>
                                     <div className="space-y-5">
-                                        {convocatoria.actividades.map((act) => (
+                                        {convocatoria.actividades.map((act: any) => (
                                             <div key={act.id} className="bg-white border border-slate-100 rounded-2xl p-6 transition-all hover:border-[#8B1E1E]/20 shadow-sm">
                                                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                                                     <h4 className="text-lg font-bold text-slate-900">{act.nombre}</h4>

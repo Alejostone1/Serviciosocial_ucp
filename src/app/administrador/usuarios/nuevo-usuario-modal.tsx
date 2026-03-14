@@ -56,7 +56,7 @@ export function NuevoUsuarioModal({ isOpen, onClose, onSuccess, programas }: Pro
 
     const { register, handleSubmit, reset, watch, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema),
-        defaultValues: { tipo_documento: 'CC', rol: 'ESTUDIANTE' },
+        defaultValues: { tipo_documento: 'CC', rol: Rol.ESTUDIANTE },
     });
 
     const rolValue = watch('rol');

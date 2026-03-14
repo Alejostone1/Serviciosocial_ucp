@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generarPDFCertificado } from '@/app/(sistema)/administrador/certificados/actions';
+import { generarPDFCertificado } from '@/app/administrador/certificados/actions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 

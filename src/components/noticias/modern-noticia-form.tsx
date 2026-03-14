@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { 
@@ -507,10 +508,12 @@ export function ModernNoticiaForm({ noticia, isEditing = false }: ModernNoticiaF
                                 className="relative group border-2 border-slate-200 rounded-2xl overflow-hidden hover:border-[#8B1E1E] transition-all hover:shadow-lg"
                             >
                                 <div className="aspect-video relative">
-                                    <img
+                                    <Image
                                         src={image.url}
                                         alt={`Imagen ${index + 1}`}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                        fill
+                                        unoptimized
+                                        className="object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
                                     
                                     {/* Overlay Controls */}
@@ -897,9 +900,11 @@ export function ModernNoticiaForm({ noticia, isEditing = false }: ModernNoticiaF
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                         {images.map((image, index) => (
                                             <div key={image.id} className="aspect-video relative overflow-hidden rounded-2xl">
-                                                <img
+                                                <Image
                                                     src={image.url}
                                                     alt={`Imagen ${index + 1}`}
+                                                    fill
+                                                    unoptimized
                                                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                                 />
                                                 {index === 0 && (

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -100,6 +100,7 @@ export function ConvocatoriasDashboardMejorado() {
   // Cargar convocatorias
   useEffect(() => {
     cargarConvocatorias();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const cargarConvocatorias = async () => {
@@ -609,7 +610,7 @@ export function ConvocatoriasDashboardMejorado() {
                             Propósito de la Convocatoria
                           </h4>
                           <p className="text-sm text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-xl border border-gray-100 italic">
-                            "{convocatoria.objetivo || 'Sin objetivo específico definido.'}"
+                            &quot;{convocatoria.objetivo || 'Sin objetivo específico definido.'}&quot;
                           </p>
                         </div>
 

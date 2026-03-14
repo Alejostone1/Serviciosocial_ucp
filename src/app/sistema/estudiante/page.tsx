@@ -121,7 +121,7 @@ export default async function EstudianteDashboardPage() {
                 >
                     {activeProjects.length > 0 ? (
                         <div className="space-y-4">
-                            {activeProjects.slice(0, 3).map((project) => (
+                            {activeProjects.slice(0, 3).map((project: any) => (
                                 <div key={project.id} className="group p-4 rounded-xl border border-slate-100 bg-white hover:border-indigo-100 hover:shadow-sm transition-all">
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
@@ -166,7 +166,7 @@ export default async function EstudianteDashboardPage() {
                 >
                     {availableOpportunities.length > 0 ? (
                         <div className="space-y-4">
-                            {availableOpportunities.slice(0, 3).map((opp) => (
+                            {availableOpportunities.slice(0, 3).map((opp: any) => (
                                 <div key={opp.id} className="group p-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">

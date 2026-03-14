@@ -107,6 +107,7 @@ export function usePostulacionesEstudiante(idEstudiante: string): UsePostulacion
     if (idEstudiante) {
       obtenerPostulaciones();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idEstudiante]);
 
   return {

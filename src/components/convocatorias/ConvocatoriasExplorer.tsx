@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Search, MapPin, Calendar, Users, Filter, ArrowRight, Clock, Building2, Briefcase, CheckCircle2, ChevronDown, Sparkles, Flame, Timer } from 'lucide-react';
 import Link from 'next/link';
 import { format, isAfter, subDays, isValid } from 'date-fns';
@@ -356,10 +357,11 @@ const ConvocatoriaRedesignedCard = React.forwardRef<HTMLElement, { conv: Convoca
                 {/* Imagen con Badges */}
                 <div className="relative h-44 w-full overflow-hidden shrink-0 bg-slate-100">
                     {conv.url_banner ? (
-                        <img
+                        <Image
                             src={conv.url_banner}
                             alt={conv.titulo}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            fill
+                            className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                     ) : (
                         <div className="w-full h-full bg-[#f1f5f9] flex items-center justify-center">

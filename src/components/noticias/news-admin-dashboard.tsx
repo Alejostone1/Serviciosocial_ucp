@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
 import { Plus, Search, Edit, Trash2, Eye, Calendar, Filter, Grid, List, FileText, Image as ImageIcon, MoreVertical, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
@@ -191,10 +192,11 @@ export function NewsAdminDashboard({ noticias }: NewsAdminDashboardProps) {
                             {/* Imagen */}
                             <div className="aspect-video relative overflow-hidden bg-gradient-to-br from-[#8B1E1E] to-[#C0392B]">
                                 {noticia.imagenes.length > 0 ? (
-                                    <img
+                                    <Image
                                         src={noticia.imagenes[0].url_imagen}
                                         alt={noticia.titulo}
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        fill
+                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
@@ -290,9 +292,11 @@ export function NewsAdminDashboard({ noticias }: NewsAdminDashboardProps) {
                                             <div className="flex items-center gap-4">
                                                 {noticia.imagenes.length > 0 ? (
                                                     <div className="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">
-                                                        <img
+                                                        <Image
                                                             src={noticia.imagenes[0].url_imagen}
                                                             alt={noticia.titulo}
+                                                            width={64}
+                                                            height={64}
                                                             className="w-full h-full object-cover"
                                                         />
                                                     </div>

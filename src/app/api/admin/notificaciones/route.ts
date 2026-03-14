@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -281,7 +282,7 @@ async function procesarEnvioMasivo(notificacionMasivaId: string, destinatarios: 
     await prisma.notificacionMasiva.update({
         where: { id: notificacionMasivaId },
         data: {
-            estado: fallidos === 0 ? 'ENVIADO' : 'PARCIAL',
+            estado: fallidos === 0 ? 'ENVIADO' : 'FALLIDO',
             enviados_count: enviados,
             fallidos_count: fallidos,
             enviado_en: new Date(),

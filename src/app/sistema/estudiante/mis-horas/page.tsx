@@ -167,7 +167,7 @@ export default async function MisHorasPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 bg-white">
-                                {hours.map((hour) => {
+                                {hours.map((hour: any) => {
                                     const { variant, label } = getEstadoBadge(hour.estado);
                                     return (
                                         <tr key={hour.id} className="hover:bg-slate-50 transition-colors">

@@ -72,7 +72,7 @@ export async function getActiveProjects() {
 
     const transformedProjects = transformDecimalsToNumbers(projects);
 
-    return transformedProjects.map(project => {
+    return transformedProjects.map((project: any) => {
         const estado = 'EN PROGRESO'; // Si está aceptada, está en progreso
         
         return {
@@ -111,7 +111,7 @@ export async function getAvailableOpportunities() {
 
     const transformedOpportunities = transformDecimalsToNumbers(opportunities);
 
-    return transformedOpportunities.map(opportunity => ({
+    return transformedOpportunities.map((opportunity: any) => ({
         id: opportunity.id,
         categoria: opportunity.categoria?.nombre || 'SIN CATEGORÍA',
         titulo: opportunity.titulo,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generarReporteActividadesExcel } from '@/app/(sistema)/administrador/reportes/actions';
+export const dynamic = 'force-dynamic';
+import { generarReporteActividadesExcel } from '@/app/administrador/reportes/actions';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import * as XLSX from 'xlsx';

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { 
@@ -428,10 +429,12 @@ export function ProfessionalNoticiaForm({ noticia, isEditing = false }: Professi
                             >
                                 {/* Imagen */}
                                 <div className="aspect-video relative overflow-hidden">
-                                    <img
+                                    <Image
                                         src={image.url}
                                         alt={`Imagen ${index + 1}`}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        unoptimized
+                                        className="object-cover"
                                     />
                                     
                                     {/* Badge de principal */}
@@ -640,10 +643,12 @@ export function ProfessionalNoticiaForm({ noticia, isEditing = false }: Professi
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
                 <div className="aspect-video relative bg-gradient-to-br from-[#8B1E1E] to-[#C0392B]">
                     {images.length > 0 && (
-                        <img
+                        <Image
                             src={images.find(img => img.isMain)?.url || images[0].url}
                             alt={formData.titulo}
-                            className="w-full h-full object-cover"
+                            fill
+                            unoptimized
+                            className="object-cover"
                         />
                     )}
                     <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-lg">

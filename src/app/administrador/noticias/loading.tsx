@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, FileText, Image, Settings } from 'lucide-react';
+import { Loader2, FileText, Image as ImageIcon, Settings } from 'lucide-react';
 
 export default function Loading() {
     return (
@@ -35,7 +35,7 @@ export default function Loading() {
                                     <FileText className="w-4 h-4 text-blue-600" />
                                 </div>
                                 <div className="absolute -top-2 -right-8 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center animate-bounce delay-100">
-                                    <Image className="w-4 h-4 text-green-600" />
+                                    <ImageIcon className="w-4 h-4 text-green-600" />
                                 </div>
                                 <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center animate-bounce delay-200">
                                     <Settings className="w-4 h-4 text-purple-600" />

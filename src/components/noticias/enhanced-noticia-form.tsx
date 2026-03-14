@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useCallback } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { 
@@ -371,10 +372,12 @@ export function EnhancedNoticiaForm({ noticia, isEditing = false }: EnhancedNoti
                                 className="relative group border-2 border-slate-200 rounded-xl overflow-hidden hover:border-[#8B1E1E] transition-all"
                             >
                                 <div className="aspect-square relative">
-                                    <img
+                                    <Image
                                         src={image.url}
                                         alt={`Imagen ${index + 1}`}
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        unoptimized
+                                        className="object-cover"
                                     />
                                     
                                     {/* Overlay Controls */}
@@ -674,10 +677,12 @@ export function EnhancedNoticiaForm({ noticia, isEditing = false }: EnhancedNoti
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {images.map((image, index) => (
                                             <div key={image.id} className="aspect-video relative overflow-hidden rounded-lg">
-                                                <img
+                                                <Image
                                                     src={image.url}
                                                     alt={`Imagen ${index + 1}`}
-                                                    className="w-full h-full object-cover"
+                                                    fill
+                                                    unoptimized
+                                                    className="object-cover"
                                                 />
                                                 {index === 0 && (
                                                     <div className="absolute top-2 left-2 px-2 py-1 bg-[#8B1E1E] text-white text-xs rounded-full">

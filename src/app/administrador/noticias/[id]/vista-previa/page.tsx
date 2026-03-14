@@ -1,4 +1,6 @@
 import React from 'react';
+export const dynamic = 'force-dynamic';
+import Image from 'next/image';
 import { getServerSession } from 'next-auth';
 import { redirect, notFound } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
@@ -118,10 +120,11 @@ export default async function VistaPreviaNoticiaPage({ params }: VistaPreviaNoti
                     {/* Hero Image */}
                     {noticia.imagenes.length > 0 && (
                         <div className="aspect-video relative overflow-hidden">
-                            <img
+                            <Image
                                 src={noticia.imagenes[0].url_imagen}
                                 alt={noticia.titulo}
-                                className="w-full h-full object-cover"
+                                fill
+                                className="object-cover"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                         </div>
@@ -177,10 +180,11 @@ export default async function VistaPreviaNoticiaPage({ params }: VistaPreviaNoti
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {noticia.imagenes.slice(1).map((imagen, index) => (
                                         <div key={imagen.id} className="aspect-video relative overflow-hidden rounded-lg">
-                                            <img
+                                            <Image
                                                 src={imagen.url_imagen}
                                                 alt={`Imagen ${index + 2}`}
-                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                                fill
+                                                className="object-cover hover:scale-105 transition-transform duration-300"
                                             />
                                         </div>
                                     ))}

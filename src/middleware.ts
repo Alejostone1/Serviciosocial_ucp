@@ -17,6 +17,7 @@ const PROTECTED_ROUTES: Record<string, string[]> = {
     '/sistema/aliado': ['ADMINISTRADOR', 'ALIADO'],
     '/sistema/auxiliar': ['ADMINISTRADOR', 'AUXILIAR'],
     '/sistema/estudiante': ['ADMINISTRADOR', 'ESTUDIANTE'],
+    '/sistema/profesor': ['ADMINISTRADOR', 'PROFESOR'],
 };
 
 export async function middleware(request: NextRequest) {
@@ -55,6 +56,7 @@ export async function middleware(request: NextRequest) {
             ALIADO: '/sistema/aliado',
             AUXILIAR: '/sistema/auxiliar',
             ESTUDIANTE: '/sistema/estudiante',
+            PROFESOR: '/sistema/profesor',
         };
         return NextResponse.redirect(new URL(roleRoutes[userRole] ?? '/', request.url));
     }
@@ -70,5 +72,6 @@ export const config = {
         '/sistema/aliado/:path*',
         '/sistema/auxiliar/:path*',
         '/sistema/estudiante/:path*',
+        '/sistema/profesor/:path*',
     ],
 };

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
@@ -547,7 +547,7 @@ export function GestionActividadesModal({ isOpen, onClose, convocatoria, activid
                         {actividad.descripcion && (
                           <div className="md:col-span-2">
                             <span className="font-semibold text-gray-700 block mb-1">Descripción:</span>
-                            <p className="text-gray-600 font-light italic leading-relaxed">"{actividad.descripcion}"</p>
+                            <p className="text-gray-600 font-light italic leading-relaxed">&quot;{actividad.descripcion}&quot;</p>
                           </div>
                         )}
 
