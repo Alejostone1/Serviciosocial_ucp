@@ -1,0 +1,240 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { EstadoPostulacion } from '@prisma/client';
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id_estudiante = searchParams.get('id_estudiante');
+    const id_convocatoria = searchParams.get('id_convocatoria');
+    const estado = searchParams.get('estado');
+    const pagina = parseInt(searchParams.get('pagina') || '1');
+    const limite = parseInt(searchParams.get('limite') || '10');
+
+    // Validar que los IDs sean UUIDs válidos si se proporcionan
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    
+    if (id_estudiante && !uuidRegex.test(id_estudiante)) {
+      return NextResponse.json(
+        { error: 'ID de estudiante inválido' },
+        { status: 400 }
+      );
+    }
+    
+    if (id_convocatoria && !uuidRegex.test(id_convocatoria)) {
+      return NextResponse.json(
+        { error: 'ID de convocatoria inválido' },
+        { status: 400 }
+      );
+    }
+
+    const skip = (pagina - 1) * limite;
+
+    // Construir filtro dinámico
+    const where: any = {};
+
+    if (id_estudiante) {
+      where.id_estudiante = id_estudiante;
+    }
+
+    if (id_convocatoria) {
+      where.id_convocatoria = id_convocatoria;
+    }
+
+    if (estado && estado !== 'todas') {
+      where.estado = estado as EstadoPostulacion;
+    }
+
+    const [postulaciones, total] = await Promise.all([
+      prisma.postulacion.findMany({
+        where,
+        include: {
+          convocatoria: {
+            include: {
+              categoria: true,
+              programa: true,
+            },
+          },
+          estudiante: {
+            select: {
+              id: true,
+              primer_nombre: true,
+              primer_apellido: true,
+              correo: true,
+              numero_documento: true,
+            },
+          },
+          revisor: {
+            select: {
+              id: true,
+              primer_nombre: true,
+              primer_apellido: true,
+              correo: true,
+            },
+          },
+        },
+        orderBy: [
+          { postulado_en: 'desc' },
+          { revisado_en: 'desc' },
+        ],
+        skip,
+        take: limite,
+      }),
+      prisma.postulacion.count({ where }),
+    ]);
+
+    return NextResponse.json({
+      postulaciones,
+      paginacion: {
+        pagina_actual: pagina,
+        total_paginas: Math.ceil(total / limite),
+        total_registros: total,
+        registros_por_pagina: limite,
+      },
+    });
+  } catch (error) {
+    console.error('Error al obtener postulaciones:', error);
+    return NextResponse.json(
+      { error: 'Error al obtener postulaciones' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  let body: any = null;
+  
+  try {
+    body = await request.json();
+    const {
+      id_convocatoria,
+      id_estudiante,
+      motivacion,
+      url_hoja_vida,
+      habilidades_relevantes,
+    } = body;
+
+    // Validar que los IDs sean UUIDs válidos
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    
+    if (!id_convocatoria || !uuidRegex.test(id_convocatoria)) {
+      return NextResponse.json(
+        { error: 'ID de convocatoria inválido' },
+        { status: 400 }
+      );
+    }
+    
+    if (!id_estudiante || !uuidRegex.test(id_estudiante)) {
+      return NextResponse.json(
+        { error: 'ID de estudiante inválido' },
+        { status: 400 }
+      );
+    }
+
+    // Validaciones básicas
+    if (!id_convocatoria || !id_estudiante) {
+      return NextResponse.json(
+        { error: 'ID de convocatoria y estudiante son obligatorios' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que la convocatoria exista y esté publicada
+    const convocatoria = await prisma.convocatoria.findUnique({
+      where: { id: id_convocatoria },
+      include: {
+        postulaciones: {
+          where: { id_estudiante },
+        },
+      },
+    });
+
+    if (!convocatoria) {
+      return NextResponse.json(
+        { error: 'La convocatoria no existe' },
+        { status: 404 }
+      );
+    }
+
+    if (convocatoria.estado !== 'PUBLICADA') {
+      return NextResponse.json(
+        { error: 'La convocatoria no está disponible para postulaciones' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar si ya existe una postulación
+    if (convocatoria.postulaciones.length > 0) {
+      return NextResponse.json(
+        { error: 'Ya tienes una postulación activa para esta convocatoria' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar que la convocatoria no haya cerrado postulaciones
+    if (convocatoria.fecha_cierre_postulacion && new Date(convocatoria.fecha_cierre_postulacion) < new Date()) {
+      return NextResponse.json(
+        { error: 'El plazo de postulaciones ha cerrado' },
+        { status: 400 }
+      );
+    }
+
+    // Verificar si hay cupos disponibles
+    if (convocatoria.cupo_maximo) {
+      const totalPostulaciones = await prisma.postulacion.count({
+        where: { id_convocatoria },
+      });
+
+      if (totalPostulaciones >= convocatoria.cupo_maximo) {
+        return NextResponse.json(
+          { error: 'No hay cupos disponibles para esta convocatoria' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Crear la postulación
+    const postulacion = await prisma.postulacion.create({
+      data: {
+        id_convocatoria,
+        id_estudiante,
+        motivacion,
+        url_hoja_vida,
+        habilidades_relevantes,
+        estado: EstadoPostulacion.PENDIENTE,
+      },
+      include: {
+        convocatoria: {
+          include: {
+            categoria: true,
+            programa: true,
+          },
+        },
+        estudiante: {
+          select: {
+            id: true,
+            primer_nombre: true,
+            primer_apellido: true,
+            correo: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(postulacion, { status: 201 });
+  } catch (error) {
+    console.error('Error al crear postulación:', error);
+    console.error('Request body:', body);
+    
+    // Si es un error de Prisma, dar más detalles
+    if (error instanceof Error && 'code' in error) {
+      console.error('Prisma error code:', (error as any).code);
+      console.error('Prisma error meta:', (error as any).meta);
+    }
+    
+    return NextResponse.json(
+      { error: 'Error al crear postulación', details: error instanceof Error ? error.message : 'Error desconocido' },
+      { status: 500 }
+    );
+  }
+}
