@@ -7,7 +7,16 @@ import { z } from 'zod';
 import { FormModal } from '@/components/ui/form-modal';
 import { toast } from 'sonner';
 import { crearUsuario } from './crear-usuario-actions';
-import { Rol, TipoDocumento } from '@prisma/client';
+import { TipoDocumento } from '@prisma/client';
+
+// Enum temporal hasta que se genere la migración
+enum Rol {
+  ADMINISTRADOR = 'ADMINISTRADOR',
+  PROFESOR = 'PROFESOR',
+  ALIADO = 'ALIADO',
+  AUXILIAR = 'AUXILIAR',
+  ESTUDIANTE = 'ESTUDIANTE',
+}
 import { Eye, EyeOff } from 'lucide-react';
 
 const schema = z.object({
@@ -28,7 +37,7 @@ type FormData = z.infer<typeof schema>;
 
 const rolLabels: Record<Rol, string> = {
     ADMINISTRADOR: 'Administrador',
-    DIRECTOR: 'Director',
+    PROFESOR: 'Profesor',
     ALIADO: 'Aliado Externo',
     ESTUDIANTE: 'Estudiante',
     AUXILIAR: 'Auxiliar',

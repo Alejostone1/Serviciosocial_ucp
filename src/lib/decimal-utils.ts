@@ -1,43 +1,73 @@
-import { Decimal } from '@prisma/client/runtime/library';
+/**
+ * Utilidades para manejar objetos Decimal de Prisma en Client Components
+ * Estas funciones son seguras para usar tanto en Server como en Client Components
+ */
 
 /**
  * Convierte un objeto Decimal a un número de JavaScript
  * Si el valor es null o undefined, retorna null
+ * Función segura para Client Components
  */
-export function decimalToNumber(value: Decimal | null | undefined): number | null {
+export function decimalToNumber(value: any): number | null {
   if (value === null || value === undefined) {
     return null;
   }
-  return value.toNumber();
+  
+  // Si ya es un número, retornarlo directamente
+  if (typeof value === 'number') {
+    return value;
+  }
+  
+  // Si es un objeto Decimal de Prisma, convertirlo
+  if (typeof value === 'object' && value.toNumber) {
+    return value.toNumber();
+  }
+  
+  // Si es string, intentar convertir a número
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+  
+  // Por defecto, intentar convertir a número
+  return Number(value) || 0;
 }
 
 /**
  * Convierte un objeto Decimal a un número de JavaScript
  * Si el valor es null o undefined, retorna 0
+ * Función segura para Client Components
  */
-export function decimalToNumberZero(value: Decimal | null | undefined): number {
-  if (value === null || value === undefined) {
-    return 0;
-  }
-  return value.toNumber();
+export function decimalToNumberZero(value: any): number {
+  const result = decimalToNumber(value);
+  return result === null ? 0 : result;
 }
 
 /**
  * Transforma recursivamente un objeto para convertir todos los valores Decimal a números
+ * Función segura para Client Components
  */
 export function transformDecimalsToNumbers(obj: any): any {
   if (obj === null || obj === undefined) {
     return obj;
   }
 
-  if (obj instanceof Decimal) {
+  // Si es un objeto Decimal de Prisma
+  if (typeof obj === 'object' && obj.toNumber) {
     return obj.toNumber();
   }
 
+  // Si ya es un número primitivo
+  if (typeof obj === 'number') {
+    return obj;
+  }
+
+  // Si es un array, procesar cada elemento
   if (Array.isArray(obj)) {
     return obj.map(item => transformDecimalsToNumbers(item));
   }
 
+  // Si es un objeto, procesar cada propiedad recursivamente
   if (typeof obj === 'object') {
     const transformed: any = {};
     for (const key in obj) {
@@ -48,11 +78,13 @@ export function transformDecimalsToNumbers(obj: any): any {
     return transformed;
   }
 
+  // Para cualquier otro tipo, retornar como está
   return obj;
 }
 
 /**
  * Específico para modelos de Prisma con campos Decimal conocidos
+ * Función segura para Client Components
  */
 export function sanitizePrograma(programa: any) {
   return {

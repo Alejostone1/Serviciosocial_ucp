@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { togglePrograma } from './actions';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { NuevoProgramaModal } from './nuevo-programa-modal';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 import Link from 'next/link';
 
 type ProgramaRow = {
@@ -56,10 +57,8 @@ export function ProgramasTableClient({
     initialData: any[];
     facultades: Facultad[];
 }) {
-    const [data, setData] = useState<ProgramaRow[]>(initialData.map(p => ({
-        ...p,
-        horas_requeridas: Number(p.horas_requeridas)
-    })));
+    // Convertir todos los Decimals a Numbers recursivamente
+    const [data, setData] = useState<ProgramaRow[]>(transformDecimalsToNumbers(initialData));
     const [searchTerm, setSearchTerm] = useState('');
     const [filtrarNivel, setFiltrarNivel] = useState<string>('todos');
     const [filtrarFacultad, setFiltrarFacultad] = useState<string>('todos');
@@ -119,14 +118,17 @@ export function ProgramasTableClient({
     };
 
     const handleNuevoPrograma = (newProg: any) => {
+        // Convertir todos los Decimals a Numbers del nuevo programa
+        const sanitizedProg = transformDecimalsToNumbers(newProg);
+        
         const row: ProgramaRow = {
-            id: newProg.id,
-            nombre: newProg.nombre,
-            codigo: newProg.codigo ?? null,
-            nivel_formacion: newProg.nivel_formacion,
-            horas_requeridas: Number(newProg.horas_requeridas),
+            id: sanitizedProg.id,
+            nombre: sanitizedProg.nombre,
+            codigo: sanitizedProg.codigo ?? null,
+            nivel_formacion: sanitizedProg.nivel_formacion,
+            horas_requeridas: sanitizedProg.horas_requeridas,
             esta_activo: true,
-            facultad: { nombre: facultades.find(f => f.id === newProg.id_facultad)?.nombre ?? '...' },
+            facultad: { nombre: facultades.find(f => f.id === sanitizedProg.id_facultad)?.nombre ?? '...' },
             _count: { usuarios: 0, convocatorias: 0 },
         };
         setData(prev => [row, ...prev]);

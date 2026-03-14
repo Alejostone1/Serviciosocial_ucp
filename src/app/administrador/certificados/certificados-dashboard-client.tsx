@@ -135,15 +135,25 @@ export function CertificadosDashboardClient({ certificados }: CertificadosDashbo
 
         // Filtro de fechas
         if (filters.fechaDesde) {
-            filtered = filtered.filter(cert =>
-                new Date(cert.emitido_en) >= filters.fechaDesde!
-            );
+            filtered = filtered.filter(cert => {
+                if (!cert.emitido_en) return false;
+                try {
+                    return new Date(cert.emitido_en) >= filters.fechaDesde!;
+                } catch (error) {
+                    return false;
+                }
+            });
         }
 
         if (filters.fechaHasta) {
-            filtered = filtered.filter(cert =>
-                new Date(cert.emitido_en) <= filters.fechaHasta!
-            );
+            filtered = filtered.filter(cert => {
+                if (!cert.emitido_en) return false;
+                try {
+                    return new Date(cert.emitido_en) <= filters.fechaHasta!;
+                } catch (error) {
+                    return false;
+                }
+            });
         }
 
         setFilteredCertificados(filtered);
@@ -280,15 +290,40 @@ export function CertificadosDashboardClient({ certificados }: CertificadosDashbo
         {
             header: 'Fecha Emisión',
             cell: (certificado) => {
-                const fecha = new Date(certificado.emitido_en);
-                return (
-                    <div className="text-xs">
-                        <div>{format(fecha, 'dd/MM/yyyy', { locale: es })}</div>
-                        <div className="text-[#94a3b8]">
-                            {format(fecha, 'HH:mm:ss', { locale: es })}
+                if (!certificado.emitido_en) {
+                    return (
+                        <div className="text-xs text-gray-500">
+                            <div>Sin fecha</div>
                         </div>
-                    </div>
-                );
+                    );
+                }
+                
+                try {
+                    const fecha = new Date(certificado.emitido_en);
+                    // Validar que la fecha sea válida
+                    if (isNaN(fecha.getTime())) {
+                        return (
+                            <div className="text-xs text-red-500">
+                                <div>Fecha inválida</div>
+                            </div>
+                        );
+                    }
+                    
+                    return (
+                        <div className="text-xs">
+                            <div>{format(fecha, 'dd/MM/yyyy', { locale: es })}</div>
+                            <div className="text-[#94a3b8]">
+                                {format(fecha, 'HH:mm:ss', { locale: es })}
+                            </div>
+                        </div>
+                    );
+                } catch (error) {
+                    return (
+                        <div className="text-xs text-red-500">
+                            <div>Error de fecha</div>
+                        </div>
+                    );
+                }
             },
         },
         {

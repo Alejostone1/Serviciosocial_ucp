@@ -417,7 +417,7 @@ model LogActividad {
 /// Roles disponibles en el sistema
 enum Rol {
   ADMINISTRADOR
-  DIRECTOR
+  PROFESOR
   ALIADO
   AUXILIAR
   ESTUDIANTE

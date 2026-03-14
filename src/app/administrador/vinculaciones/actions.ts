@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 
 async function checkAdmin() {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !['ADMINISTRADOR', 'DIRECTOR'].includes(session.user.role)) {
+    if (!session?.user || !['ADMINISTRADOR', 'PROFESOR'].includes(session.user.role)) {
         throw new Error('No autorizado');
     }
     return session;

@@ -1,0 +1,1 @@
+SELECT DISTINCT rol FROM usuarios;

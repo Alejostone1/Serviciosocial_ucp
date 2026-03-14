@@ -1,6 +1,7 @@
 import React from 'react';
 import { notFound } from 'next/navigation';
 import { db } from '@/lib/prisma';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 import { ArrowLeft, Calendar, MapPin, Clock, Users, ExternalLink, Building2, Briefcase, FileText, CheckCircle2, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -33,7 +34,7 @@ async function getConvocatoria(id: string) {
         });
     }, 'Error al obtener convocatoria');
 
-    return convocatoria;
+    return transformDecimalsToNumbers(convocatoria);
 }
 
 export async function generateMetadata({ params }: { params: { id: string } }) {

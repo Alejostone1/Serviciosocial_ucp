@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { FormModal } from '@/components/ui/form-modal';
 import { toast } from 'sonner';
+import { decimalToNumber, decimalToNumberZero } from '@/lib/decimal-utils';
+import { FormModal } from '@/components/ui/form-modal';
 import { actualizarPrograma } from './actions';
 import { NivelFormacion } from '@prisma/client';
 
@@ -58,7 +59,7 @@ export function EditarProgramaModal({ isOpen, onClose, onSuccess, programa, facu
                 codigo: programa.codigo || '',
                 id_facultad: programa.id_facultad,
                 nivel_formacion: programa.nivel_formacion,
-                horas_requeridas: Number(programa.horas_requeridas),
+                horas_requeridas: decimalToNumberZero(programa.horas_requeridas),
             });
         }
     }, [isOpen, programa, reset]);

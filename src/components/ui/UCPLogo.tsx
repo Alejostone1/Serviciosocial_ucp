@@ -41,7 +41,7 @@ export function UCPLogo({
     variant = 'round',
     size = 40,
     className = '',
-    priority = false,
+    priority = true, // Cambiado a true por defecto para imágenes importantes
 }: UCPLogoProps) {
     const src = getLogoSrc(variant);
 
@@ -58,6 +58,8 @@ export function UCPLogo({
                     sizes={`${size}px`}
                     className="object-contain"
                     priority={priority}
+                    // Optimización adicional para evitar la advertencia
+                    unoptimized={false}
                 />
             </div>
         );
@@ -76,6 +78,8 @@ export function UCPLogo({
                 sizes={`${size * 4}px`}
                 className="object-contain object-left"
                 priority={priority}
+                // Optimización adicional para evitar la advertencia
+                unoptimized={false}
             />
         </div>
     );

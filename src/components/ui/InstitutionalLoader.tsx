@@ -4,19 +4,16 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { UCPLogo } from '@/components/ui/UCPLogo';
 
-export function InstitutionalLoader({ priority = false }: { priority?: boolean }) {
+export function InstitutionalLoader({ priority = true }: { priority?: boolean }) {
     return (
         <div className="flex flex-col items-center justify-center py-12 px-4 space-y-4">
             <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
-                animate={{
-                    opacity: [0.4, 1, 0.4],
-                    scale: [0.95, 1, 0.95]
-                }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
+                    duration: 0.5,
+                    ease: "easeOut",
+                    scale: { type: "spring", stiffness: 100 }
                 }}
                 className="relative"
             >

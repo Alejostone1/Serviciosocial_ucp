@@ -5,7 +5,7 @@
 
 // ── ENUMERACIONES ───────────────────────────────────────────
 
-export type Rol = 'ADMINISTRADOR' | 'DIRECTOR' | 'ALIADO' | 'AUXILIAR' | 'ESTUDIANTE';
+export type Rol = 'ADMINISTRADOR' | 'PROFESOR' | 'ALIADO' | 'AUXILIAR' | 'ESTUDIANTE';
 
 export type TipoDocumento = 'CC' | 'TI' | 'CE' | 'PASAPORTE' | 'NIT';
 

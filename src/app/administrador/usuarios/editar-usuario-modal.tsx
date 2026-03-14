@@ -24,7 +24,7 @@ type FormData = z.infer<typeof schema>;
 
 const rolLabels: Record<Rol, string> = {
     ADMINISTRADOR: 'Administrador',
-    DIRECTOR: 'Director',
+    PROFESOR: 'Profesor',
     ALIADO: 'Aliado Externo',
     ESTUDIANTE: 'Estudiante',
     AUXILIAR: 'Auxiliar',

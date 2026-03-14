@@ -5,6 +5,7 @@ import { NivelFormacion } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 
 async function checkAdmin() {
     const session = await getServerSession(authOptions);
@@ -24,11 +25,8 @@ export async function getProgramas() {
         orderBy: { nombre: 'asc' },
     });
     
-    // Convertir Decimal a número para evitar problemas de serialización
-    return programas.map(programa => ({
-        ...programa,
-        horas_requeridas: Number(programa.horas_requeridas),
-    }));
+    // Convertir todos los Decimals a Numbers recursivamente
+    return transformDecimalsToNumbers(programas);
 }
 
 /** Obtener solo las facultades activas (para el select del formulario) */

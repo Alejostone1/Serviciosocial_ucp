@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { Rol, TipoDocumento } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 import { revalidatePath } from 'next/cache';
 import bcrypt from 'bcryptjs';
 
@@ -71,9 +72,10 @@ export async function crearUsuario(data: {
 /** Obtener programas activos para el select */
 export async function getProgramasActivos() {
     await checkAdmin();
-    return prisma.programa.findMany({
+    const programas = await prisma.programa.findMany({
         where: { esta_activo: true },
         select: { id: true, nombre: true, nivel_formacion: true },
         orderBy: { nombre: 'asc' },
     });
+    return transformDecimalsToNumbers(programas);
 }

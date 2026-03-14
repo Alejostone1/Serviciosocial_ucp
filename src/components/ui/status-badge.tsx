@@ -47,7 +47,7 @@ export function StatusBadge({ status, className, variant, ...props }: StatusBadg
         computedVariant = 'error';
     }
     // Info / En Curso
-    else if (['EN_CURSO', 'DIRECTOR', 'ALIADO'].includes(s)) {
+    else if (['EN_CURSO', 'PROFESOR', 'ALIADO'].includes(s)) {
         computedVariant = 'info';
     }
     // Institucional

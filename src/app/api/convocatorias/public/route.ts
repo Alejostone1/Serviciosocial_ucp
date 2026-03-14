@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/prisma';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 
 export async function GET(request: NextRequest) {
     try {
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
             });
         }, 'Error al obtener convocatorias públicas');
 
-        return NextResponse.json(convocatorias);
+        return NextResponse.json(transformDecimalsToNumbers(convocatorias));
     } catch (error) {
         console.error('Error en API de convocatorias públicas:', error);
         return NextResponse.json(

@@ -28,7 +28,7 @@ const crearNotificacionMasivaSchema = z.object({
     fecha_programada: z.string().datetime().optional(),
     destinatarios_filtro: z.object({
         programas: z.array(z.string().uuid()).optional(),
-        roles: z.array(z.enum(['ADMINISTRADOR', 'DIRECTOR', 'ALIADO', 'AUXILIAR', 'ESTUDIANTE'])).optional(),
+        roles: z.array(z.enum(['ADMINISTRADOR', 'PROFESOR', 'ALIADO', 'AUXILIAR', 'ESTUDIANTE'])).optional(),
         facultades: z.array(z.string().uuid()).optional(),
         usuarios_especificos: z.array(z.string().uuid()).optional(),
     }).optional(),

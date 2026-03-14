@@ -10,7 +10,7 @@ import { authOptions } from '@/lib/auth';
  */
 async function checkAdmin() {
     const session = await getServerSession(authOptions);
-    if (!session?.user || !['ADMINISTRADOR', 'DIRECTOR', 'ALIADO'].includes(session.user.role)) {
+    if (!session?.user || !['ADMINISTRADOR', 'PROFESOR', 'ALIADO'].includes(session.user.role)) {
         throw new Error('No autorizado');
     }
 }

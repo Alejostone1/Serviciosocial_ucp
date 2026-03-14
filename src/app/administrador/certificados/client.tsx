@@ -90,12 +90,40 @@ export function CertificadosTableClient({ initialData }: { initialData: Certific
         },
         {
             header: 'Emitido',
-            cell: (c) => (
-                <div className="flex flex-col text-xs text-[#64748b]">
-                    <span>{format(new Date(c.emitido_en), 'dd MMM yyyy', { locale: es })}</span>
-                    <span className="text-[10px] font-mono text-[#94a3b8]">{c.codigo_verificacion.substring(0, 8)}...</span>
-                </div>
-            ),
+            cell: (c) => {
+                if (!c.emitido_en) {
+                    return (
+                        <div className="flex flex-col text-xs text-[#64748b]">
+                            <span>Sin fecha</span>
+                        </div>
+                    );
+                }
+                
+                try {
+                    const fecha = new Date(c.emitido_en);
+                    // Validar que la fecha sea válida
+                    if (isNaN(fecha.getTime())) {
+                        return (
+                            <div className="flex flex-col text-xs text-red-500">
+                                <span>Fecha inválida</span>
+                            </div>
+                        );
+                    }
+                    
+                    return (
+                        <div className="flex flex-col text-xs text-[#64748b]">
+                            <span>{format(fecha, 'dd MMM yyyy', { locale: es })}</span>
+                            <span className="text-[10px] font-mono text-[#94a3b8]">{c.codigo_verificacion.substring(0, 8)}...</span>
+                        </div>
+                    );
+                } catch (error) {
+                    return (
+                        <div className="flex flex-col text-xs text-red-500">
+                            <span>Error de fecha</span>
+                        </div>
+                    );
+                }
+            },
         },
         { header: 'Estado', cell: (c) => <StatusBadge status={c.esta_vigente ? 'ACTIVO' : 'CANCELADA'} /> },
         {

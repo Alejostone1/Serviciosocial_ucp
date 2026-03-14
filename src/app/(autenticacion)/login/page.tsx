@@ -58,9 +58,9 @@ export default function LoginPage() {
 
     const routes: Record<string, string> = {
       ADMINISTRADOR: '/administrador',
-      DIRECTOR: '/director',
-      ALIADO: '/aliado',
-      AUXILIAR: '/auxiliar',
+      PROFESOR: '/sistema/profesor',
+      ALIADO: '/sistema/aliado',
+      AUXILIAR: '/sistema/auxiliar',
       ESTUDIANTE: '/sistema/estudiante',
     };
 

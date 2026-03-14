@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { Clock, Plus, FileText, Calendar, TrendingUp, AlertCircle, Award, CheckCircle } from 'lucide-react';
 import { db } from '@/lib/prisma';
 import { EstadoReporte } from '@prisma/client';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 import { PageContainer } from '../components/layout/PageContainer';
 import { SectionHeader } from '../components/ui/SectionHeader';
 import { StatsCard } from '../components/ui/StatsCard';
@@ -36,7 +37,7 @@ async function getStudentHours(userId: string) {
             orderBy: { reportado_en: 'desc' }
         });
     }, 'Error al obtener reportes de horas');
-    return hours;
+    return transformDecimalsToNumbers(hours);
 }
 
 async function getStudentStats(userId: string) {
@@ -66,7 +67,7 @@ async function getStudentStats(userId: string) {
             totalPendientes: Number(totalPendiente._sum.horas_reportadas || 0)
         };
     }, 'Error al obtener estadísticas de horas');
-    return stats;
+    return transformDecimalsToNumbers(stats);
 }
 
 export default async function MisHorasPage() {

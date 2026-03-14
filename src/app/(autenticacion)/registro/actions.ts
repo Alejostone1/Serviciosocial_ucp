@@ -1,6 +1,7 @@
 'use server';
 
 import { db } from '@/lib/prisma';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 import bcrypt from 'bcryptjs';
 import { revalidatePath } from 'next/cache';
 
@@ -151,12 +152,14 @@ export async function getProgramas() {
             });
         }, 'Error al obtener programas');
 
-        return programas.map((programa: any) => ({
+        const transformedProgramas = transformDecimalsToNumbers(programas);
+
+        return transformedProgramas.map((programa: any) => ({
             id: programa.id,
             nombre: programa.nombre,
             codigo: programa.codigo,
             facultad: programa.facultad?.nombre || 'Sin facultad',
-            horas_requeridas: Number(programa.horas_requeridas)
+            horas_requeridas: programa.horas_requeridas
         }));
 
     } catch (error) {

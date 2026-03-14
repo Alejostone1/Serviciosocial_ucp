@@ -336,11 +336,18 @@ export async function generarPDFCertificado(idCertificado: string) {
             // 9. Fecha y Pie de página
             pdf.setFontSize(10);
             pdf.setTextColor(colors.text);
-            const fechaEmision = new Date(certificado.emitido_en).toLocaleDateString('es-ES', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
+            let fechaEmision = 'Fecha no disponible';
+            if (certificado.emitido_en) {
+                try {
+                    fechaEmision = new Date(certificado.emitido_en).toLocaleDateString('es-ES', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                } catch (error) {
+                    fechaEmision = 'Fecha inválida';
+                }
+            }
             pdf.text(`Pereira, Risaralda - Colombia, ${fechaEmision}`, 148.5, 192, { align: 'center' });
 
             pdf.setFontSize(8);

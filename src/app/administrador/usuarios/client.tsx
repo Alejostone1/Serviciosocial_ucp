@@ -280,7 +280,7 @@ export function UsuariosTableClient({
                                 >
                                     <option value="TODOS">Todos los Roles</option>
                                     <option value="ADMINISTRADOR">Administrador</option>
-                                    <option value="DIRECTOR">Director</option>
+                                    <option value="PROFESOR">Profesor</option>
                                     <option value="AUXILIAR">Auxiliar</option>
                                     <option value="ALIADO">Aliado</option>
                                     <option value="ESTUDIANTE">Estudiante</option>

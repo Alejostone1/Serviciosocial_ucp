@@ -71,7 +71,7 @@ export function CrearNotificacionModal({ isOpen, onClose, onSuccess }: CrearNoti
         roles: false
     });
 
-    const roles = ['ESTUDIANTE', 'ADMINISTRADOR', 'DIRECTOR', 'ALIADO', 'AUXILIAR'];
+    const roles = ['ESTUDIANTE', 'ADMINISTRADOR', 'PROFESOR', 'ALIADO', 'AUXILIAR'];
     const canalesDisponibles = [
         { id: 'INTERNA', label: 'Notificación Interna', icon: MessageSquare },
         { id: 'CORREO', label: 'Correo Electrónico', icon: Mail },

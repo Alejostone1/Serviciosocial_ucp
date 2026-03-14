@@ -13,9 +13,14 @@ export default async function CertificadosPage() {
         vigentes: certificados.filter(c => c.esta_vigente).length,
         anulados: certificados.filter(c => !c.esta_vigente).length,
         delMes: certificados.filter(c => {
-            const fecha = new Date(c.emitido_en);
-            const ahora = new Date();
-            return fecha.getMonth() === ahora.getMonth() && fecha.getFullYear() === ahora.getFullYear();
+            if (!c.emitido_en) return false;
+            try {
+                const fecha = new Date(c.emitido_en);
+                const ahora = new Date();
+                return fecha.getMonth() === ahora.getMonth() && fecha.getFullYear() === ahora.getFullYear();
+            } catch (error) {
+                return false;
+            }
         }).length
     };
 

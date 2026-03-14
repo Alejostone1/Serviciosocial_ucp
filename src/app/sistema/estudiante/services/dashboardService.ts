@@ -3,6 +3,7 @@
 import { db } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { transformDecimalsToNumbers } from '@/lib/decimal-utils';
 
 async function getCurrentStudent() {
     const session = await getServerSession(authOptions);
@@ -26,7 +27,9 @@ export async function getStudentProgress() {
         });
     }, 'Error al obtener progreso del estudiante');
 
-    if (!perfil) {
+    const transformedPerfil = transformDecimalsToNumbers(perfil);
+
+    if (!transformedPerfil) {
         // Valores por defecto si no tiene perfil
         return {
             currentHours: 0,
@@ -35,7 +38,7 @@ export async function getStudentProgress() {
         };
     }
 
-    const currentHours = Number(perfil.horas_acumuladas) || 0;
+    const currentHours = transformedPerfil.horas_acumuladas || 0;
     const requiredHours = 180; // Valor estándar
     const percentage = Math.min((currentHours / requiredHours) * 100, 100);
 
@@ -67,7 +70,9 @@ export async function getActiveProjects() {
         });
     }, 'Error al obtener proyectos activos');
 
-    return projects.map(project => {
+    const transformedProjects = transformDecimalsToNumbers(projects);
+
+    return transformedProjects.map(project => {
         const estado = 'EN PROGRESO'; // Si está aceptada, está en progreso
         
         return {
@@ -104,12 +109,14 @@ export async function getAvailableOpportunities() {
         });
     }, 'Error al obtener convocatorias disponibles');
 
-    return opportunities.map(opportunity => ({
+    const transformedOpportunities = transformDecimalsToNumbers(opportunities);
+
+    return transformedOpportunities.map(opportunity => ({
         id: opportunity.id,
         categoria: opportunity.categoria?.nombre || 'SIN CATEGORÍA',
         titulo: opportunity.titulo,
         descripcion: opportunity.descripcion || '',
-        horas: Number(opportunity.horas_totales_ofrecidas) || 0,
+        horas: opportunity.horas_totales_ofrecidas || 0,
         organizacion: 'Universidad Catolica de Pereira', // Simulado - debería venir de la relación
         modalidad: opportunity.modalidad
     }));
