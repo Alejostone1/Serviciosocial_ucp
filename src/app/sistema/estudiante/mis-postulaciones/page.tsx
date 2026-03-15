@@ -181,7 +181,7 @@ export default function MisPostulacionesPage() {
                 /* Sin resultados para el filtro */
                 <div className="py-16 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-200 text-center">
                     <Search className="w-7 h-7 text-slate-200 mb-3" />
-                    <p className="text-sm font-semibold text-slate-400">Sin resultados para "{busqueda || filtroEstado}"</p>
+                    <p className="text-sm font-semibold text-slate-400">Sin resultados para &ldquo;{busqueda || filtroEstado}&rdquo;</p>
                     <button
                         onClick={() => { setBusqueda(''); setFiltroEstado('todas'); }}
                         className="mt-5 text-[11px] font-bold uppercase tracking-widest text-[#8B1E1E] hover:text-[#a32424] transition-colors"

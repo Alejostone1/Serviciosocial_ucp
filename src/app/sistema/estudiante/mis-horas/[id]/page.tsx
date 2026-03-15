@@ -48,7 +48,8 @@ async function getReporteDetalles(id: string, userId: string) {
                             primer_nombre: true,
                             primer_apellido: true
                         }
-                    }
+                    },
+                    evidencias: true
                 }
             });
         }, 'Error al obtener detalles del reporte');
@@ -199,23 +200,23 @@ export default async function ReporteDetallesPage({ params }: { params: { id: st
                         </div>
 
                         {/* Archivos Adjuntos */}
-                        {reporte.archivos_soporte && Array.isArray(reporte.archivos_soporte) && reporte.archivos_soporte.length > 0 && (
+                        {reporte.evidencias && Array.isArray(reporte.evidencias) && reporte.evidencias.length > 0 && (
                             <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
                                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Archivos de Soporte</h2>
                                 <div className="space-y-3">
-                                    {reporte.archivos_soporte.map((archivo: any, index: number) => (
+                                    {reporte.evidencias.map((evidencia: any, index: number) => (
                                         <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                             <div className="flex items-center gap-3">
                                                 <FileText className="w-4 h-4 text-gray-500" />
                                                 <div>
-                                                    <p className="text-sm font-medium text-gray-900">{archivo.nombre}</p>
+                                                    <p className="text-sm font-medium text-gray-900">{evidencia.archivo_nombre || 'Evidencia sin nombre'}</p>
                                                     <p className="text-xs text-gray-500">
-                                                        {archivo.tipo} • {(archivo.tamaño / 1024 / 1024).toFixed(2)} MB
+                                                        {evidencia.archivo_mime || 'Tipo desconocido'} • {evidencia.peso_bytes ? (evidencia.peso_bytes / 1024 / 1024).toFixed(2) + ' MB' : 'Tamaño desconocido'}
                                                     </p>
                                                 </div>
                                             </div>
                                             <a
-                                                href={archivo.url}
+                                                href={evidencia.archivo_url || '#'}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-[#8B1E1E] hover:text-[#731919] transition-colors"

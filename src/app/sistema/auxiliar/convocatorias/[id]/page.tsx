@@ -230,7 +230,7 @@ function InfoSection({ convocatoria }: any) {
             <div className="prose prose-slate max-w-none">
                 <h3 className="text-lg font-semibold text-slate-800 mb-4">Alcance de la Convocatoria</h3>
                 <div className="text-sm leading-relaxed text-slate-600 font-normal space-y-6">
-                    <p className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 italic">"{convocatoria.descripcion}"</p>
+                    <p className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100 italic">&ldquo;{convocatoria.descripcion}&rdquo;</p>
                     
                     {convocatoria.objetivo && (
                         <div className="space-y-4">
