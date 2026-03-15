@@ -538,6 +538,9 @@ async function main() {
   // 7) USUARIOS (estudiantes · profesores · aliados)
   // ─────────────────────────────────────────────
   console.log('\n👥 Creando usuarios del sistema...');
+  const defaultPassword = 'Ucpservicio123';
+  const defaultHashedPassword = await bcrypt.hash(defaultPassword, 10);
+
 
   // ── 7a. Estudiantes ───────────────────────────
   /**
@@ -586,17 +589,19 @@ async function main() {
 
     const usuario = await prisma.usuario.upsert({
       where: { correo: est.correo },
-      update: {},
+      update: { contrasena_hash: defaultHashedPassword },
       create: {
         primer_nombre: est.primer_nombre,
         primer_apellido: est.primer_apellido,
         correo: est.correo,
+        contrasena_hash: defaultHashedPassword,
         numero_documento: est.numero_documento,
         tipo_documento: TipoDocumento.CC,
         rol: Rol.ESTUDIANTE,
         id_programa,
         telefono: est.telefono,
       },
+
     });
 
     await prisma.perfilEstudiante.upsert({
@@ -679,17 +684,19 @@ async function main() {
 
     const usuario = await prisma.usuario.upsert({
       where: { correo: prof.correo },
-      update: {},
+      update: { contrasena_hash: defaultHashedPassword },
       create: {
         primer_nombre: prof.primer_nombre,
         primer_apellido: prof.primer_apellido,
         correo: prof.correo,
+        contrasena_hash: defaultHashedPassword,
         numero_documento: prof.numero_documento,
         tipo_documento: TipoDocumento.CC,
         rol: Rol.PROFESOR,
         id_programa,
         telefono: prof.telefono,
       },
+
     });
 
     console.log(
@@ -721,18 +728,50 @@ async function main() {
   for (const aliado of aliadosData) {
     const usuario = await prisma.usuario.upsert({
       where: { correo: aliado.correo },
-      update: {},
+      update: { contrasena_hash: defaultHashedPassword },
       create: {
         primer_nombre: aliado.primer_nombre,
         primer_apellido: aliado.primer_apellido,
         correo: aliado.correo,
+        contrasena_hash: defaultHashedPassword,
         numero_documento: aliado.numero_documento,
         tipo_documento: TipoDocumento.NIT,
         rol: Rol.ALIADO,
         telefono: aliado.telefono,
       },
+
     });
     console.log(`  ✅ Aliado: ${usuario.primer_nombre} ${usuario.primer_apellido}`);
+  }
+
+  // ── 7d. Auxiliares ────────────────────────────
+  const auxiliaresData = [
+    {
+      primer_nombre: 'Andrea',
+      primer_apellido: 'Castro',
+      correo: 'andrea.auxiliar@ucp.edu.co',
+      numero_documento: '1098765432',
+      telefono: '3112223344',
+    },
+  ];
+
+  console.log('\n👨‍💼 Creando auxiliares...');
+  for (const auxiliar of auxiliaresData) {
+    const usuario = await prisma.usuario.upsert({
+      where: { correo: auxiliar.correo },
+      update: { contrasena_hash: defaultHashedPassword },
+      create: {
+        primer_nombre: auxiliar.primer_nombre,
+        primer_apellido: auxiliar.primer_apellido,
+        correo: auxiliar.correo,
+        contrasena_hash: defaultHashedPassword,
+        numero_documento: auxiliar.numero_documento,
+        tipo_documento: TipoDocumento.CC,
+        rol: Rol.AUXILIAR,
+        telefono: auxiliar.telefono,
+      },
+    });
+    console.log(`  ✅ Auxiliar: ${usuario.primer_nombre} ${usuario.primer_apellido}`);
   }
 
   // ─────────────────────────────────────────────
@@ -905,6 +944,7 @@ async function main() {
     cntEstudiantes,
     cntProfesores,
     cntAliados,
+    cntAuxiliares,
   ] = await Promise.all([
     prisma.facultad.count(),
     prisma.programa.count(),
@@ -918,6 +958,7 @@ async function main() {
     prisma.usuario.count({ where: { rol: Rol.ESTUDIANTE } }),
     prisma.usuario.count({ where: { rol: Rol.PROFESOR } }),
     prisma.usuario.count({ where: { rol: Rol.ALIADO } }),
+    prisma.usuario.count({ where: { rol: Rol.AUXILIAR } }),
   ]);
 
   console.log('\n═══════════════════════════════════════════════════');
@@ -935,6 +976,7 @@ async function main() {
   console.log(`🎓 Estudiantes:           ${cntEstudiantes}`);
   console.log(`👨‍🏫 Profesores:            ${cntProfesores}`);
   console.log(`🤝 Aliados:               ${cntAliados}`);
+  console.log(`👨‍💼 Auxiliares:            ${cntAuxiliares}`);
   console.log('👨‍💼 Administrador:         1');
   console.log('═══════════════════════════════════════════════════\n');
 }

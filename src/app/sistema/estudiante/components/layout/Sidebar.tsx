@@ -65,7 +65,7 @@ export function Sidebar({ isOpen, setIsOpen }: SidebarProps) {
                 {/* Logo Area */}
                 <div className="h-16 flex items-center px-4 border-b border-slate-200">
                     <div className="flex items-center gap-3">
-                        <UCPLogo variant="round" size={36} priority />
+                        <UCPLogo variant="round" size={36} />
                         <span className="font-semibold text-slate-900 text-base tracking-tight">Servicio Social</span>
                     </div>
                     {/* Close button inside sidebar on mobile */}

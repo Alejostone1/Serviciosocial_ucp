@@ -31,10 +31,7 @@ export async function getActividadesDisponibles() {
                 where: {
                     esta_activa: true,
                     convocatoria: {
-                        estado: 'PUBLICADA',
-                        fecha_cierre_postulacion: {
-                            gte: new Date()
-                        }
+                        estado: { in: ['PUBLICADA', 'EN_CURSO'] as any[] },
                     }
                 },
                 include: {
@@ -194,28 +191,27 @@ export async function crearReporteHoras(formData: FormData) {
             throw new Error('Ya has reportado horas para esta actividad hoy');
         }
 
+        const fecha_actividad = formData.get('fecha_actividad') as string | null;
+
         // Crear el reporte
         const nuevoReporte = await db.execute(async (prisma) => {
             return await prisma.reporteHoras.create({
                 data: {
                     id_estudiante: session.user.id,
                     id_actividad: validatedData.id_actividad,
+                    id_convocatoria: actividad.id_convocatoria,
                     horas_reportadas: validatedData.horas_reportadas,
                     descripcion_trabajo: validatedData.descripcion_trabajo,
                     notas_estudiante: validatedData.notas_estudiante,
-                    archivos_soporte: validatedData.archivos_soporte,
+                    fecha_actividad: fecha_actividad ? new Date(fecha_actividad) : null,
                     estado: EstadoReporte.REPORTADO,
                     reportado_en: new Date()
-                },
+                } as any,
                 include: {
                     actividad: {
                         select: {
                             nombre: true,
-                            convocatoria: {
-                                select: {
-                                    titulo: true
-                                }
-                            }
+                            convocatoria: { select: { titulo: true } }
                         }
                     }
                 }
@@ -242,9 +238,9 @@ export async function crearReporteHoras(formData: FormData) {
             });
         }, 'Error al registrar log de actividad');
 
-        // Revalidar la página de mis horas
-        revalidatePath('/estudiante/mis-horas');
-        revalidatePath('/estudiante/mis-horas/reportar');
+        // Revalidar rutas correctas
+        revalidatePath('/sistema/estudiante/mis-horas');
+        revalidatePath('/sistema/estudiante/mis-horas/reportar');
 
         return {
             success: true,

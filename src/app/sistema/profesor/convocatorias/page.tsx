@@ -2,11 +2,13 @@ import { ProfesorConvocatoriasList } from '../components/ProfesorConvocatoriasLi
 
 export default function ConvocatoriasPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 animate-in fade-in duration-700">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Convocatorias</h1>
-        <p className="text-gray-600">Gestiona y supervisa las convocatorias de servicio social</p>
+      <div className="px-2">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Mis Convocatorias</h1>
+        <p className="text-slate-500 text-lg font-normal mt-2 leading-relaxed max-w-2xl">
+          Gestiona tus proyectos de servicio social, supervisa las actividades y revisa el progreso de los estudiantes vinculados.
+        </p>
       </div>
 
       {/* Convocatorias List */}

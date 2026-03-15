@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,32 +8,29 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { 
-    Clock, 
-    Upload, 
-    FileText, 
-    Calendar, 
-    MapPin, 
-    Users, 
-    AlertCircle,
-    CheckCircle,
-    Loader2,
-    Plus,
-    X,
-    File
+import {
+    Clock, Upload, FileText, Calendar, MapPin,
+    AlertCircle, CheckCircle2, Loader2, X, File,
+    ChevronRight, ArrowLeft, Activity, Layers,
+    Target, Search, BookOpen
 } from 'lucide-react';
 import { crearReporteHoras, getActividadesDisponibles, getReportesRecientes } from './actions';
 
-// Schema de validación
+// ─── Schema de validación ─────────────────────────────────────────────────────
 const reporteSchema = z.object({
     id_actividad: z.string().min(1, 'Selecciona una actividad'),
-    horas_reportadas: z.number().min(0.5, 'Mínimo 0.5 horas').max(8, 'Máximo 8 horas'),
-    descripcion_trabajo: z.string().min(10, 'Mínimo 10 caracteres').max(500, 'Máximo 500 caracteres'),
+    horas_reportadas: z.number()
+        .min(0.5, 'Mínimo 0.5 horas')
+        .max(12, 'Máximo 12 horas por reporte'),
+    descripcion_trabajo: z.string()
+        .min(10, 'Mínimo 10 caracteres')
+        .max(1000, 'Máximo 1000 caracteres'),
+    fecha_actividad: z.string().optional(),
     notas_estudiante: z.string().max(300, 'Máximo 300 caracteres').optional(),
 });
-
 type ReporteForm = z.infer<typeof reporteSchema>;
 
+// ─── Tipos ────────────────────────────────────────────────────────────────────
 interface Actividad {
     id: string;
     nombre: string;
@@ -44,8 +41,6 @@ interface Actividad {
     fecha_inicio: string | null;
     fecha_limite: string | null;
     ubicacion: string | null;
-    materiales_requeridos: string[];
-    esta_activa: boolean;
     id_convocatoria: string;
     convocatoria: {
         id: string;
@@ -53,11 +48,7 @@ interface Actividad {
         descripcion: string;
         modalidad: string;
         lugar: string | null;
-        categoria: {
-            id: string;
-            nombre: string;
-            color_hex: string | null;
-        } | null;
+        categoria: { id: string; nombre: string; color_hex: string | null } | null;
     };
 }
 
@@ -67,575 +58,524 @@ interface ReporteReciente {
     descripcion_trabajo: string | null;
     estado: string;
     reportado_en: string;
-    actividad: {
-        nombre: string;
-        fecha_limite: string | null;
-    };
+    actividad: { nombre: string; };
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const TIPO_LABELS: Record<string, string> = {
+    GENERAL: 'General', CAPACITACION: 'Capacitación', CAMPO: 'Campo',
+    ADMINISTRATIVA: 'Administrativa', INVESTIGACION: 'Investigación', COMUNITARIA: 'Comunitaria'
+};
+const MODAL_LABELS: Record<string, string> = {
+    PRESENCIAL: 'Presencial', VIRTUAL: 'Virtual', HIBRIDA: 'Híbrida'
+};
+const ESTADO_CONFIG: Record<string, { label: string; color: string }> = {
+    APROBADO:             { label: 'Aprobado',    color: 'bg-emerald-100 text-emerald-700' },
+    REPORTADO:            { label: 'En revisión', color: 'bg-amber-100 text-amber-700' },
+    VALIDADO_AUXILIAR:    { label: 'Validado',    color: 'bg-blue-100 text-blue-700' },
+    RECHAZADO:            { label: 'Rechazado',   color: 'bg-rose-100 text-rose-700' },
+    PENDIENTE_VALIDACION: { label: 'Pendiente',   color: 'bg-slate-100 text-slate-600' },
+};
+
+// ─── Componente Principal ─────────────────────────────────────────────────────
 export default function ReportarHorasClient() {
     const router = useRouter();
     const { data: session } = useSession();
-    const user = session?.user;
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [actividadSeleccionada, setActividadSeleccionada] = useState<Actividad | null>(null);
     const [actividadesDisponibles, setActividadesDisponibles] = useState<Actividad[]>([]);
-    const [cargandoActividades, setCargandoActividades] = useState(false);
-    const [mostrarSelectorActividad, setMostrarSelectorActividad] = useState(false);
-
-    // Cargar actividades disponibles al montar
-    useEffect(() => {
-        const cargarActividadesDisponibles = async () => {
-            try {
-                setCargandoActividades(true);
-                
-                const response = await fetch('/api/actividades', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        convocatoria_ids: [], // Obtener todas las actividades activas
-                        id_estudiante: user?.id || ''
-                    }),
-                });
-
-                if (!response.ok) {
-                    throw new Error('Error al cargar actividades');
-                }
-
-                const data = await response.json();
-                setActividadesDisponibles(data.actividades || []);
-            } catch (error) {
-                console.error('Error:', error);
-            } finally {
-                setCargandoActividades(false);
-            }
-        };
-
-        cargarActividadesDisponibles();
-    }, [user?.id]);
-
-    // Filtrar actividades basadas en la convocatoria seleccionada
-    const actividadesFiltradas = actividadesDisponibles.filter(actividad => 
-        !actividadSeleccionada || actividad.id_convocatoria === actividadSeleccionada.id_convocatoria
-    );
-
-    const seleccionarActividad = (actividad: Actividad) => {
-        setActividadSeleccionada(actividad);
-        setMostrarSelectorActividad(false);
-        setValue('id_actividad', actividad.id);
-        setValue('horas_reportadas', Math.min(actividad.horas_estimadas, actividad.horas_maximas || actividad.horas_estimadas));
-    };
-
     const [reportesRecientes, setReportesRecientes] = useState<ReporteReciente[]>([]);
+    const [actividadSeleccionada, setActividadSeleccionada] = useState<Actividad | null>(null);
+    const [busquedaActividad, setBusquedaActividad] = useState('');
     const [archivos, setArchivos] = useState<File[]>([]);
-    const [selectedActividad, setSelectedActividad] = useState<Actividad | null>(null);
+    const [paso, setPaso] = useState<1 | 2>(1); // 1: seleccionar, 2: formulario
 
     const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        watch,
-        setValue,
-        reset
+        register, handleSubmit, formState: { errors },
+        watch, setValue, reset
     } = useForm<ReporteForm>({
         resolver: zodResolver(reporteSchema),
-        defaultValues: {
-            horas_reportadas: 1,
-            descripcion_trabajo: '',
-            notas_estudiante: '',
-        }
+        defaultValues: { horas_reportadas: 1, descripcion_trabajo: '', notas_estudiante: '' }
     });
 
-    const watchedActividad = watch('id_actividad');
-    const watchedHoras = watch('horas_reportadas');
+    const watchedDesc = watch('descripcion_trabajo') || '';
+    const watchedNotas = watch('notas_estudiante') || '';
+    const watchedHoras = watch('horas_reportadas') || 0;
 
-    // Cargar datos iniciales
+    // ─── Carga inicial ────────────────────────────────────────────────────────
     useEffect(() => {
-        const cargarDatos = async () => {
+        const cargar = async () => {
             try {
-                const [actividadesData, reportesData] = await Promise.all([
+                const [acts, reps] = await Promise.all([
                     getActividadesDisponibles(),
                     getReportesRecientes()
                 ]);
 
-                // Convertir Decimal a number para las actividades
-                const actividadesNormalizadas = actividadesData.map(act => ({
-                    ...act,
-                    descripcion: act.descripcion || '',
-                    horas_estimadas: Number(act.horas_estimadas),
-                    horas_maximas: act.horas_maximas ? Number(act.horas_maximas) : null,
-                    fecha_inicio: act.fecha_inicio?.toString() || null,
-                    fecha_limite: act.fecha_limite?.toString() || null,
-                    creado_en: act.creado_en.toString(),
-                    actualizado_en: act.actualizado_en.toString(),
-                    convocatoria: act.convocatoria ? {
-                        ...act.convocatoria,
-                        modalidad: act.convocatoria.modalidad.toString(),
-                    } : null,
-                }));
-
-                // Convertir Decimal a number para los reportes
-                const reportesNormalizados = reportesData.map(rep => ({
-                    ...rep,
-                    horas_reportadas: Number(rep.horas_reportadas),
-                    reportado_en: rep.reportado_en.toString(),
-                    revisado_en: rep.revisado_en?.toString() || null,
-                    actividad: {
-                        ...rep.actividad,
-                        fecha_limite: rep.actividad.fecha_limite?.toString() || null,
+                setActividadesDisponibles(acts.map(a => ({
+                    ...a,
+                    descripcion: a.descripcion || '',
+                    horas_estimadas: Number(a.horas_estimadas),
+                    horas_maximas: a.horas_maximas ? Number(a.horas_maximas) : null,
+                    fecha_inicio: a.fecha_inicio?.toString() || null,
+                    fecha_limite: a.fecha_limite?.toString() || null,
+                    convocatoria: {
+                        ...a.convocatoria,
+                        modalidad: a.convocatoria.modalidad.toString(),
                     }
-                }));
+                })) as unknown as Actividad[]);
 
-                setActividadesDisponibles(actividadesNormalizadas as unknown as Actividad[]);
-                setReportesRecientes(reportesNormalizados);
-            } catch (error) {
-                console.error('Error cargando datos:', error);
-                toast.error('Error al cargar las actividades disponibles');
+                setReportesRecientes(reps.map(r => ({
+                    ...r,
+                    horas_reportadas: Number(r.horas_reportadas),
+                    reportado_en: r.reportado_en.toString(),
+                })));
+            } catch (e) {
+                toast.error('Error al cargar actividades');
             } finally {
                 setLoading(false);
             }
         };
-
-        cargarDatos();
+        cargar();
     }, []);
 
-    // Actualizar actividad seleccionada
-    useEffect(() => {
-        if (watchedActividad) {
-            const actividad = actividadesDisponibles.find(a => a.id === watchedActividad);
-            setSelectedActividad(actividad || null);
-            
-            // Establecer horas recomendadas
-            if (actividad) {
-                const horasRecomendadas = Math.min(
-                    Number(actividad.horas_estimadas),
-                    8
-                );
-                setValue('horas_reportadas', horasRecomendadas);
-            }
-        }
-    }, [watchedActividad, actividadesDisponibles, setValue]);
+    // ─── Actividades filtradas ────────────────────────────────────────────────
+    const actividadesFiltradas = actividadesDisponibles.filter(a =>
+        a.nombre.toLowerCase().includes(busquedaActividad.toLowerCase()) ||
+        a.convocatoria.titulo.toLowerCase().includes(busquedaActividad.toLowerCase())
+    );
 
-    // Manejo de archivos
+    // ─── Seleccionar actividad ────────────────────────────────────────────────
+    const seleccionarActividad = (a: Actividad) => {
+        setActividadSeleccionada(a);
+        setValue('id_actividad', a.id);
+        setValue('horas_reportadas', Math.min(a.horas_estimadas, 8));
+        setPaso(2);
+    };
+
+    // ─── Archivos ─────────────────────────────────────────────────────────────
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
-        const validFiles = files.filter(file => {
-            const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-            const isValidType = validTypes.includes(file.type);
-            const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
-
-            if (!isValidType) {
-                toast.error(`El archivo ${file.name} no es válido (solo PDF, JPG, PNG)`);
-                return false;
+        const valid = files.filter(f => {
+            if (!['application/pdf', 'image/jpeg', 'image/png'].includes(f.type)) {
+                toast.error(`"${f.name}" no es PDF/JPG/PNG`); return false;
             }
-            if (!isValidSize) {
-                toast.error(`El archivo ${file.name} es demasiado grande (máximo 5MB)`);
-                return false;
+            if (f.size > 5 * 1024 * 1024) {
+                toast.error(`"${f.name}" supera 5 MB`); return false;
             }
             return true;
         });
-
-        setArchivos(prev => [...prev, ...validFiles]);
+        setArchivos(prev => [...prev, ...valid]);
+        e.target.value = '';
     };
 
-    const removeFile = (index: number) => {
-        setArchivos(prev => prev.filter((_, i) => i !== index));
-    };
-
-    // Envío del formulario
+    // ─── Submit ───────────────────────────────────────────────────────────────
     const onSubmit = async (data: ReporteForm) => {
-        if (!selectedActividad) {
-            toast.error('Selecciona una actividad válida');
-            return;
-        }
-
+        if (!actividadSeleccionada) { toast.error('Selecciona una actividad'); return; }
         setSubmitting(true);
-
         try {
-            const formData = new FormData();
-            formData.append('id_actividad', data.id_actividad);
-            formData.append('horas_reportadas', data.horas_reportadas.toString());
-            formData.append('descripcion_trabajo', data.descripcion_trabajo);
-            if (data.notas_estudiante) {
-                formData.append('notas_estudiante', data.notas_estudiante);
+            const fd = new FormData();
+            fd.append('id_actividad', data.id_actividad);
+            fd.append('horas_reportadas', data.horas_reportadas.toString());
+            fd.append('descripcion_trabajo', data.descripcion_trabajo);
+            if (data.notas_estudiante) fd.append('notas_estudiante', data.notas_estudiante);
+            if (data.fecha_actividad) fd.append('fecha_actividad', data.fecha_actividad);
+            archivos.forEach(f => fd.append('archivos', f));
+
+            const res = await crearReporteHoras(fd);
+            if (res.success) {
+                toast.success('¡Reporte enviado correctamente!');
+                reset(); setArchivos([]); setActividadSeleccionada(null); setPaso(1);
+                setTimeout(() => router.push('/sistema/estudiante/mis-horas'), 1500);
             }
-
-            // Agregar archivos
-            archivos.forEach(file => {
-                formData.append('archivos', file);
-            });
-
-            const resultado = await crearReporteHoras(formData);
-
-            if (resultado.success) {
-                toast.success(resultado.message);
-                reset();
-                setArchivos([]);
-                setSelectedActividad(null);
-                
-                // Recargar reportes recientes
-                const reportesData = await getReportesRecientes();
-                const reportesNormalizados = reportesData.map(rep => ({
-                    ...rep,
-                    horas_reportadas: Number(rep.horas_reportadas),
-                    reportado_en: rep.reportado_en.toString(),
-                    revisado_en: rep.revisado_en?.toString() || null,
-                    actividad: {
-                        ...rep.actividad,
-                        fecha_limite: rep.actividad.fecha_limite?.toString() || null,
-                    }
-                }));
-                setReportesRecientes(reportesNormalizados);
-                
-                // Redirigir después de 2 segundos
-                setTimeout(() => {
-                    router.push('/estudiante/mis-horas');
-                }, 2000);
-            }
-        } catch (error) {
-            console.error('Error enviando reporte:', error);
-            toast.error(error instanceof Error ? error.message : 'Error al enviar el reporte');
+        } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Error al enviar el reporte');
         } finally {
             setSubmitting(false);
         }
     };
 
+    // ─── Loading ──────────────────────────────────────────────────────────────
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#8B1E1E] mx-auto mb-4" />
-                    <p className="text-gray-600">Cargando actividades disponibles...</p>
-                </div>
+            <div className="flex flex-col items-center justify-center py-32">
+                <div className="w-10 h-10 border-2 border-[#8B1E1E]/20 border-t-[#8B1E1E] rounded-full animate-spin mb-4" />
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Cargando actividades...</p>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-                {/* Header */}
-                <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm mb-6">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 bg-[#8B1E1E]/10 rounded-lg">
-                                <Clock className="w-5 h-5 text-[#8B1E1E]" />
-                            </div>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">Reportar Horas</h1>
-                                <p className="text-sm text-gray-600">Registra las horas de servicio social realizadas</p>
-                            </div>
-                        </div>
-                        <Link
-                            href="/estudiante/mis-horas"
-                            className="text-gray-600 hover:text-gray-900 transition-colors"
-                        >
-                            ← Volver a Mis Horas
-                        </Link>
-                    </div>
-                </div>
+        <div className="max-w-5xl mx-auto space-y-8 pb-20 px-4 lg:px-0 animate-in fade-in duration-500">
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Formulario Principal */}
-                    <div className="lg:col-span-2">
-                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                                {/* Selección de Actividad */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Actividad Realizada *
-                                    </label>
-                                    <select
-                                        {...register('id_actividad')}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent"
-                                        disabled={submitting}
-                                    >
-                                        <option value="">Selecciona una actividad...</option>
-                                        {actividadesDisponibles.map((actividad: Actividad) => (
-                                            <option key={actividad.id} value={actividad.id}>
-                                                {actividad.nombre} - {actividad.convocatoria.titulo}
-                                            </option>
+            {/* ── Header ── */}
+            <div className="flex items-center justify-between pt-2">
+                <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${paso >= 1 ? 'bg-[#8B1E1E] text-white' : 'bg-slate-100 text-slate-400'}`}>1</span>
+                        <span className={paso >= 1 ? 'text-[#8B1E1E]' : ''}>Actividad</span>
+                        <ChevronRight className="w-3 h-3 text-slate-200" />
+                        <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black ${paso === 2 ? 'bg-[#8B1E1E] text-white' : 'bg-slate-100 text-slate-400'}`}>2</span>
+                        <span className={paso === 2 ? 'text-[#8B1E1E]' : ''}>Detalles del Reporte</span>
+                    </div>
+                    <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">
+                        {paso === 1 ? 'Selecciona una actividad' : 'Completa el reporte'}
+                    </h1>
+                    <p className="text-sm text-slate-500 font-medium">
+                        {paso === 1
+                            ? 'Elige la actividad que realizaste para registrar tus horas.'
+                            : `Actividad: ${actividadSeleccionada?.nombre}`
+                        }
+                    </p>
+                </div>
+                <Link
+                    href="/sistema/estudiante/mis-horas"
+                    className="flex items-center gap-2 text-xs font-bold text-slate-400 uppercase tracking-widest hover:text-slate-700 transition-colors"
+                >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    Mis Horas
+                </Link>
+            </div>
+
+            {/* ─────────── PASO 1: Seleccionar Actividad ─────────── */}
+            {paso === 1 && (
+                <div className="space-y-4">
+                    {/* Buscador */}
+                    <div className="relative group">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#8B1E1E] transition-colors" />
+                        <input
+                            placeholder="Buscar por nombre de actividad o convocatoria..."
+                            value={busquedaActividad}
+                            onChange={e => setBusquedaActividad(e.target.value)}
+                            className="w-full h-12 bg-white border border-slate-200 rounded-2xl pl-11 pr-4 text-sm font-medium focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none"
+                        />
+                    </div>
+
+                    {actividadesFiltradas.length === 0 ? (
+                        <div className="py-20 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-200">
+                            <BookOpen className="w-8 h-8 text-slate-200 mb-3" />
+                            <p className="text-sm font-semibold text-slate-400">No hay actividades disponibles</p>
+                            <p className="text-xs text-slate-300 mt-1">Verifica que estés postulado a una convocatoria activa</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Agrupar por convocatoria */}
+                            {Object.entries(
+                                actividadesFiltradas.reduce<Record<string, Actividad[]>>((acc, a) => {
+                                    const titulo = a.convocatoria.titulo;
+                                    if (!acc[titulo]) acc[titulo] = [];
+                                    acc[titulo].push(a);
+                                    return acc;
+                                }, {})
+                            ).map(([titulo, acts]) => (
+                                <div key={titulo} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                                    {/* Cabecera convocatoria */}
+                                    <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
+                                        <div className="w-2 h-2 rounded-full bg-[#8B1E1E]" />
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest truncate">
+                                            {titulo}
+                                        </span>
+                                    </div>
+                                    {/* Actividades */}
+                                    <div className="divide-y divide-slate-50">
+                                        {acts.map(a => (
+                                            <button
+                                                key={a.id}
+                                                onClick={() => seleccionarActividad(a)}
+                                                className="w-full flex items-start gap-5 px-6 py-5 text-left hover:bg-slate-50/70 transition-colors group"
+                                            >
+                                                {/* Icono tipo */}
+                                                <div className="mt-0.5 shrink-0 w-9 h-9 bg-[#8B1E1E]/5 border border-[#8B1E1E]/10 rounded-xl flex items-center justify-center">
+                                                    <Activity className="w-4 h-4 text-[#8B1E1E]" />
+                                                </div>
+                                                {/* Info */}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-semibold text-slate-800 group-hover:text-[#8B1E1E] transition-colors">
+                                                        {a.nombre}
+                                                    </p>
+                                                    <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                            {TIPO_LABELS[a.tipo_actividad] || a.tipo_actividad}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-[#8B1E1E] uppercase tracking-widest">
+                                                            {a.horas_estimadas}h estimadas
+                                                        </span>
+                                                        {a.ubicacion && (
+                                                            <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                                                                <MapPin className="w-2.5 h-2.5" />
+                                                                {a.ubicacion}
+                                                            </span>
+                                                        )}
+                                                        {a.convocatoria.modalidad && (
+                                                            <span className="text-[10px] font-bold text-slate-300 uppercase">
+                                                                {MODAL_LABELS[a.convocatoria.modalidad] || a.convocatoria.modalidad}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {a.descripcion && (
+                                                        <p className="text-xs text-slate-400 mt-1.5 line-clamp-1">{a.descripcion}</p>
+                                                    )}
+                                                </div>
+                                                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 mt-1 group-hover:text-[#8B1E1E] group-hover:translate-x-0.5 transition-all" />
+                                            </button>
                                         ))}
-                                    </select>
-                                    {errors.id_actividad && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.id_actividad.message}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* ─────────── PASO 2: Formulario ─────────── */}
+            {paso === 2 && actividadSeleccionada && (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-2 duration-400">
+                    
+                    {/* Columna principal */}
+                    <div className="lg:col-span-2 space-y-4">
+                        {/* Card info actividad */}
+                        <div className="bg-white rounded-2xl border border-slate-100 p-5 flex items-start gap-4">
+                            <div className="shrink-0 w-10 h-10 bg-[#8B1E1E]/5 border border-[#8B1E1E]/10 rounded-xl flex items-center justify-center">
+                                <Activity className="w-5 h-5 text-[#8B1E1E]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-slate-800">{actividadSeleccionada.nombre}</p>
+                                <p className="text-[10px] text-slate-400 font-medium mt-0.5 uppercase tracking-widest truncate">
+                                    {actividadSeleccionada.convocatoria.titulo}
+                                </p>
+                                <div className="flex flex-wrap gap-3 mt-2">
+                                    <span className="text-[10px] font-bold text-[#8B1E1E] bg-[#8B1E1E]/8 px-2.5 py-1 rounded-full">
+                                        {actividadSeleccionada.horas_estimadas}h estimadas
+                                    </span>
+                                    {actividadSeleccionada.ubicacion && (
+                                        <span className="flex items-center gap-1 text-[10px] font-medium text-slate-500">
+                                            <MapPin className="w-2.5 h-2.5" />
+                                            {actividadSeleccionada.ubicacion}
+                                        </span>
                                     )}
                                 </div>
+                            </div>
+                            <button
+                                onClick={() => { setPaso(1); setActividadSeleccionada(null); }}
+                                className="text-slate-300 hover:text-slate-600 transition-colors p-1 rounded-lg hover:bg-slate-50"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
 
-                                {/* Información de la Actividad Seleccionada */}
-                                {selectedActividad && (
-                                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                        <h3 className="font-semibold text-blue-900 mb-2">Información de la Actividad</h3>
-                                        <div className="space-y-2 text-sm">
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-blue-600" />
-                                                <span className="text-blue-800">
-                                                    <strong>Convocatoria:</strong> {selectedActividad.convocatoria.titulo}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <Users className="w-4 h-4 text-blue-600" />
-                                                <span className="text-blue-800">
-                                                    <strong>Modalidad:</strong> {selectedActividad.convocatoria.modalidad}
-                                                </span>
-                                            </div>
-                                            {selectedActividad.convocatoria.lugar && (
-                                                <div className="flex items-center gap-2">
-                                                    <MapPin className="w-4 h-4 text-blue-600" />
-                                                    <span className="text-blue-800">
-                                                        <strong>Lugar:</strong> {selectedActividad.convocatoria.lugar}
-                                                    </span>
-                                                </div>
-                                            )}
-                                            <div className="flex items-center gap-2">
-                                                <Clock className="w-4 h-4 text-blue-600" />
-                                                <span className="text-blue-800">
-                                                    <strong>Horas estimadas:</strong> {selectedActividad.horas_estimadas}h
-                                                    {selectedActividad.horas_maximas && ` (máximo ${selectedActividad.horas_maximas}h)`}
-                                                </span>
-                                            </div>
-                                            {selectedActividad.descripcion && (
-                                                <p className="text-blue-800 mt-2">
-                                                    <strong>Descripción:</strong> {selectedActividad.descripcion}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Horas Reportadas */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Horas Reportadas *
+                        {/* Formulario */}
+                        <form id="reporte-form" onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
+                            
+                            {/* Horas + Fecha (grid 2 col) */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Clock className="w-3 h-3" /> Horas Realizadas *
                                     </label>
                                     <input
                                         type="number"
                                         step="0.5"
                                         min="0.5"
-                                        max="8"
+                                        max="12"
                                         {...register('horas_reportadas', { valueAsNumber: true })}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent"
+                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-semibold focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none"
                                         disabled={submitting}
                                     />
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        Mínimo 0.5 horas, máximo 8 horas por día
-                                    </p>
                                     {errors.horas_reportadas && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.horas_reportadas.message}</p>
+                                        <p className="text-[10px] text-rose-500 font-bold">{errors.horas_reportadas.message}</p>
                                     )}
+                                    <p className="text-[10px] text-slate-400">
+                                        Estimadas: <span className="font-bold text-[#8B1E1E]">{actividadSeleccionada.horas_estimadas}h</span>
+                                    </p>
                                 </div>
-
-                                {/* Descripción del Trabajo */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Descripción del Trabajo Realizado *
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Calendar className="w-3 h-3" /> Fecha de Actividad
                                     </label>
-                                    <textarea
-                                        {...register('descripcion_trabajo')}
-                                        rows={4}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent resize-none"
-                                        placeholder="Describe detalladamente las actividades que realizaste..."
+                                    <input
+                                        type="date"
+                                        max={new Date().toISOString().split('T')[0]}
+                                        {...register('fecha_actividad')}
+                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-medium focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none"
                                         disabled={submitting}
                                     />
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        {watch('descripcion_trabajo')?.length || 0}/500 caracteres
-                                    </p>
-                                    {errors.descripcion_trabajo && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.descripcion_trabajo.message}</p>
-                                    )}
                                 </div>
+                            </div>
 
-                                {/* Archivos Adjuntos */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Archivos de Soporte (Opcional)
+                            {/* Descripción */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <FileText className="w-3 h-3" /> Descripción del trabajo realizado *
+                                </label>
+                                <textarea
+                                    rows={5}
+                                    {...register('descripcion_trabajo')}
+                                    placeholder="Describe con detalle qué hiciste, cómo contribuiste y qué aprendiste durante esta actividad..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none resize-none"
+                                    disabled={submitting}
+                                />
+                                <div className="flex justify-between">
+                                    {errors.descripcion_trabajo
+                                        ? <p className="text-[10px] text-rose-500 font-bold">{errors.descripcion_trabajo.message}</p>
+                                        : <span />
+                                    }
+                                    <p className="text-[10px] text-slate-300 font-medium tabular-nums">{watchedDesc.length}/1000</p>
+                                </div>
+                            </div>
+
+                            {/* Archivos */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                    <Upload className="w-3 h-3" /> Evidencias (Opcional)
+                                </label>
+                                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-[#8B1E1E]/30 transition-colors">
+                                    <input
+                                        type="file" id="evidencias" multiple
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={handleFileChange}
+                                        className="hidden" disabled={submitting}
+                                    />
+                                    <label htmlFor="evidencias" className="cursor-pointer">
+                                        <Upload className="w-5 h-5 text-slate-300 mx-auto mb-2" />
+                                        <p className="text-xs font-semibold text-slate-500">Arrastra o selecciona archivos</p>
+                                        <p className="text-[10px] text-slate-400 mt-1">PDF, JPG, PNG — Máximo 5 MB por archivo</p>
                                     </label>
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center">
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept=".pdf,.jpg,.jpeg,.png"
-                                            onChange={handleFileChange}
-                                            className="hidden"
-                                            id="archivos"
-                                            disabled={submitting}
-                                        />
-                                        <label
-                                            htmlFor="archivos"
-                                            className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                                        >
-                                            <Upload className="w-4 h-4" />
-                                            Seleccionar Archivos
-                                        </label>
-                                        <p className="mt-2 text-sm text-gray-500">
-                                            PDF, JPG, PNG (máximo 5MB por archivo)
+                                </div>
+                                {archivos.length > 0 && (
+                                    <div className="space-y-2 mt-2">
+                                        {archivos.map((f, i) => (
+                                            <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
+                                                <div className="flex items-center gap-3">
+                                                    <File className="w-4 h-4 text-[#8B1E1E]" />
+                                                    <div>
+                                                        <p className="text-xs font-semibold text-slate-700 truncate max-w-[200px]">{f.name}</p>
+                                                        <p className="text-[10px] text-slate-400">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                    </div>
+                                                </div>
+                                                <button type="button" onClick={() => setArchivos(p => p.filter((_, j) => j !== i))}
+                                                    className="text-slate-300 hover:text-rose-500 transition-colors">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Notas */}
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                    Notas Adicionales (Opcional)
+                                </label>
+                                <textarea
+                                    rows={2}
+                                    {...register('notas_estudiante')}
+                                    placeholder="Observaciones, comentarios o contexto adicional para el revisor..."
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm font-medium focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none resize-none"
+                                    disabled={submitting}
+                                />
+                                <p className="text-right text-[10px] text-slate-300 tabular-nums">{watchedNotas.length}/300</p>
+                            </div>
+                        </form>
+
+                        {/* Botones fijos */}
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => { setPaso(1); setActividadSeleccionada(null); }}
+                                className="h-12 px-6 border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:bg-slate-50 transition-all"
+                            >
+                                Cambiar Actividad
+                            </button>
+                            <button
+                                form="reporte-form"
+                                type="submit"
+                                disabled={submitting}
+                                className="flex-1 h-12 bg-[#8B1E1E] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#a32424] transition-all shadow-lg shadow-red-900/10 flex items-center justify-center gap-2 disabled:opacity-50"
+                            >
+                                {submitting
+                                    ? <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+                                    : <><CheckCircle2 className="w-4 h-4" /> Enviar Reporte</>
+                                }
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* ── Sidebar ── */}
+                    <div className="space-y-4">
+                        {/* Contador horas */}
+                        <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                                <Target className="w-3 h-3" /> Horas a Reportar
+                            </p>
+                            <div className="flex items-baseline gap-1.5">
+                                <span className="text-5xl font-black text-[#8B1E1E] tabular-nums leading-none">
+                                    {watchedHoras || 0}
+                                </span>
+                                <span className="text-lg font-bold text-slate-300">hrs</span>
+                            </div>
+                            <div className="mt-3 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                <div
+                                    className="h-full bg-[#8B1E1E] rounded-full transition-all duration-300"
+                                    style={{ width: `${Math.min((watchedHoras / (actividadSeleccionada.horas_estimadas || 8)) * 100, 100)}%` }}
+                                />
+                            </div>
+                            <p className="text-[10px] text-slate-400 mt-1.5">
+                                Meta: <span className="font-bold">{actividadSeleccionada.horas_estimadas}h</span>
+                            </p>
+                        </div>
+
+                        {/* Checklist */}
+                        <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <Layers className="w-3 h-3" /> Lista de Verificación
+                            </p>
+                            <div className="space-y-3">
+                                {[
+                                    { label: 'Actividad seleccionada', done: true },
+                                    { label: 'Horas definidas', done: watchedHoras > 0 },
+                                    { label: 'Descripción completa', done: watchedDesc.length >= 10 },
+                                    { label: 'Evidencia adjunta', done: archivos.length > 0, optional: true },
+                                ].map((item, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${item.done ? 'bg-emerald-500' : 'bg-slate-100'}`}>
+                                            {item.done && <CheckCircle2 className="w-2.5 h-2.5 text-white" />}
+                                        </div>
+                                        <p className={`text-xs font-medium transition-colors ${item.done ? 'text-slate-700' : 'text-slate-400'}`}>
+                                            {item.label}
+                                            {item.optional && <span className="text-slate-300 ml-1">(opcional)</span>}
                                         </p>
                                     </div>
-
-                                    {/* Lista de archivos seleccionados */}
-                                    {archivos.length > 0 && (
-                                        <div className="mt-4 space-y-2">
-                                            {archivos.map((file, index) => (
-                                                <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded-lg">
-                                                    <div className="flex items-center gap-2">
-                                                        <File className="w-4 h-4 text-gray-500" />
-                                                        <span className="text-sm text-gray-700">{file.name}</span>
-                                                        <span className="text-xs text-gray-500">
-                                                            ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                                                        </span>
-                                                    </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeFile(index)}
-                                                        className="text-red-500 hover:text-red-700"
-                                                        disabled={submitting}
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Notas Adicionales */}
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Notas Adicionales (Opcional)
-                                    </label>
-                                    <textarea
-                                        {...register('notas_estudiante')}
-                                        rows={3}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent resize-none"
-                                        placeholder="Comentarios adicionales sobre tu trabajo..."
-                                        disabled={submitting}
-                                    />
-                                    <p className="mt-1 text-sm text-gray-500">
-                                        {watch('notas_estudiante')?.length || 0}/300 caracteres
-                                    </p>
-                                    {errors.notas_estudiante && (
-                                        <p className="mt-1 text-sm text-red-600">{errors.notas_estudiante.message}</p>
-                                    )}
-                                </div>
-
-                                {/* Botones de Acción */}
-                                <div className="flex gap-3 pt-4">
-                                    <button
-                                        type="submit"
-                                        disabled={submitting || !selectedActividad}
-                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#8B1E1E] text-white rounded-lg font-medium hover:bg-[#731919] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        {submitting ? (
-                                            <>
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                Enviando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <CheckCircle className="w-4 h-4" />
-                                                Enviar Reporte
-                                            </>
-                                        )}
-                                    </button>
-                                    <Link
-                                        href="/estudiante/mis-horas"
-                                        className="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-                                    >
-                                        Cancelar
-                                    </Link>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-
-                    {/* Sidebar */}
-                    <div className="space-y-6">
-                        {/* Estadísticas Rápidas */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                            <h3 className="font-semibold text-gray-900 mb-4">Resumen de Reportes</h3>
-                            <div className="space-y-3">
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Reportes este mes</span>
-                                    <span className="font-semibold text-gray-900">{reportesRecientes.length}</span>
-                                </div>
-                                <div className="flex justify-between items-center">
-                                    <span className="text-sm text-gray-600">Total horas reportadas</span>
-                                    <span className="font-semibold text-gray-900">
-                                        {reportesRecientes.reduce((sum, r) => sum + r.horas_reportadas, 0)}h
-                                    </span>
-                                </div>
+                                ))}
                             </div>
                         </div>
 
-                        {/* Reportes Recientes */}
-                        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-                            <h3 className="font-semibold text-gray-900 mb-4">Reportes Recientes</h3>
-                            {reportesRecientes.length === 0 ? (
-                                <p className="text-sm text-gray-500 text-center py-4">
-                                    No tienes reportes recientes
+                        {/* Reportes recientes */}
+                        {reportesRecientes.length > 0 && (
+                            <div className="bg-white rounded-2xl border border-slate-100 p-5">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <Clock className="w-3 h-3" /> Recientes (7 días)
                                 </p>
-                            ) : (
                                 <div className="space-y-3">
-                                    {reportesRecientes.slice(0, 5).map((reporte) => (
-                                        <div key={reporte.id} className="border-b border-gray-100 pb-3 last:border-0">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex-1">
-                                                    <p className="text-sm font-medium text-gray-900">
-                                                        {reporte.actividad.nombre}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {new Date(reporte.reportado_en).toLocaleDateString('es-PE')}
-                                                    </p>
+                                    {reportesRecientes.slice(0, 4).map(r => {
+                                        const cfg = ESTADO_CONFIG[r.estado] || { label: r.estado, color: 'bg-slate-100 text-slate-600' };
+                                        return (
+                                            <div key={r.id} className="flex items-start justify-between gap-2">
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-semibold text-slate-700 truncate">{r.actividad.nombre}</p>
+                                                    <p className="text-[10px] text-slate-400">{r.horas_reportadas}h · {new Date(r.reportado_en).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</p>
                                                 </div>
-                                                <div className="text-right">
-                                                    <span className="text-sm font-semibold text-gray-900">
-                                                        {reporte.horas_reportadas}h
-                                                    </span>
-                                                    <div className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
-                                                        reporte.estado === 'APROBADO' 
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : reporte.estado === 'REPORTADO'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                    }`}>
-                                                        {reporte.estado}
-                                                    </div>
-                                                </div>
+                                                <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shrink-0 ${cfg.color}`}>
+                                                    {cfg.label}
+                                                </span>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Guía Rápida */}
-                        <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-                            <h3 className="font-semibold text-blue-900 mb-3">Guía de Reporte</h3>
-                            <div className="space-y-2 text-sm text-blue-800">
-                                <div className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>Selecciona la actividad realizada</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>Describe detalladamente tu trabajo</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>Adjunta archivos de soporte si es necesario</span>
-                                </div>
-                                <div className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                                    <span>Revisa antes de enviar</span>
+                                        );
+                                    })}
                                 </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

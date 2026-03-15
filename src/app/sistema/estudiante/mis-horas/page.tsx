@@ -98,7 +98,7 @@ export default async function MisHorasPage() {
                 description="Lleva el control de tus horas de servicio social y reporta nuevas actividades."
             >
                 <Link
-                    href="/estudiante/certificados"
+                    href="/sistema/estudiante/certificados"
                     className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl hover:bg-slate-50 transition-colors shadow-sm font-medium"
                 >
                     <FileText className="w-4 h-4" />
@@ -121,7 +121,7 @@ export default async function MisHorasPage() {
                     value={`+${stats.thisMonthHours}h`}
                     description="Horas aprobadas este mes"
                     icon={Calendar}
-                    colorClass="text-indigo-600 bg-indigo-50"
+                    colorClass="text-[#8B1E1E] bg-red-50"
                 />
                 <StatsCard
                     title="En Revisión"
@@ -147,8 +147,8 @@ export default async function MisHorasPage() {
                         description="Comienza a reportar tus horas de servicio social para llevar un seguimiento de tu progreso."
                         action={
                             <Link
-                                href="/estudiante/mis-horas/reportar"
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold mt-4"
+                                href="/sistema/estudiante/mis-horas/reportar"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-[#8B1E1E] text-white rounded-xl hover:bg-[#a32424] transition font-semibold mt-4 shadow-lg shadow-red-900/10"
                             >
                                 <Plus className="w-5 h-5" />
                                 Reportar mis primeras horas
@@ -176,8 +176,8 @@ export default async function MisHorasPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <Link
-                                                    href={`/estudiante/mis-horas/${hour.id}`}
-                                                    className="font-semibold text-slate-900 hover:text-indigo-600 transition-colors"
+                                                    href={`/sistema/estudiante/mis-horas/${hour.id}`}
+                                                    className="font-semibold text-slate-900 hover:text-[#8B1E1E] transition-colors"
                                                 >
                                                     {hour.actividad?.nombre || 'Sin nombre'}
                                                 </Link>

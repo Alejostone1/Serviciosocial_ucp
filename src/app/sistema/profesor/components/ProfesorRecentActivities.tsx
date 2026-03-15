@@ -1,7 +1,8 @@
 'use client';
 
 import React from 'react';
-import { Activity, Calendar, Clock, User } from 'lucide-react';
+import { Activity as ActivityIcon, Calendar, Clock, User, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Activity {
   id: string;
@@ -13,106 +14,81 @@ interface Activity {
 }
 
 export function ProfesorRecentActivities() {
-  // TODO: Replace with real data from API
   const activities: Activity[] = [
     {
       id: '1',
       type: 'actividad',
       title: 'Nueva actividad creada',
-      description: 'Tutoría de matemáticas para el programa de Ingeniería',
-      date: '2024-01-15',
+      description: 'Taller de refuerzo en Matemáticas Básicas',
+      date: 'Hace 15 min',
       status: 'Activa',
     },
     {
       id: '2',
       type: 'postulacion',
-      title: 'Postulación revisada',
-      description: 'Estudiante Juan Pérez - Convocatoria de Servicio Comunitario',
-      date: '2024-01-14',
-      status: 'Aprobada',
+      title: 'Postulación recibida',
+      description: 'Juan Camilo Pérez - Ingeniería de Sistemas',
+      date: 'Hace 2 horas',
+      status: 'Pendiente',
     },
     {
       id: '3',
       type: 'reporte',
-      title: 'Reporte de horas aprobado',
-      description: 'María González - 8 horas en Actividad de Alfabetización',
-      date: '2024-01-13',
+      title: 'Reporte validado',
+      description: 'Validaste 8 horas para María José González',
+      date: 'Ayer',
       status: 'Aprobado',
-    },
-    {
-      id: '4',
-      type: 'convocatoria',
-      title: 'Convocatoria actualizada',
-      description: 'Servicio Social de Verano 2024 - Fecha extendida',
-      date: '2024-01-12',
-      status: 'Activa',
     },
   ];
 
   const getActivityIcon = (type: Activity['type']) => {
     switch (type) {
-      case 'actividad':
-        return Activity;
-      case 'convocatoria':
-        return Calendar;
-      case 'postulacion':
-        return User;
-      case 'reporte':
-        return Clock;
-      default:
-        return Activity;
+      case 'actividad': return ActivityIcon;
+      case 'convocatoria': return Calendar;
+      case 'postulacion': return User;
+      case 'reporte': return Clock;
+      default: return ActivityIcon;
     }
   };
 
-  const getActivityColor = (type: Activity['type']) => {
+  const getActivityStyles = (type: Activity['type']) => {
     switch (type) {
-      case 'actividad':
-        return 'bg-blue-100 text-blue-600';
-      case 'convocatoria':
-        return 'bg-green-100 text-green-600';
-      case 'postulacion':
-        return 'bg-yellow-100 text-yellow-600';
-      case 'reporte':
-        return 'bg-purple-100 text-purple-600';
-      default:
-        return 'bg-gray-100 text-gray-600';
+      case 'actividad': return 'bg-indigo-50 text-indigo-600';
+      case 'convocatoria': return 'bg-[#8B1E1E]/5 text-[#8B1E1E]';
+      case 'postulacion': return 'bg-amber-50 text-amber-600';
+      case 'reporte': return 'bg-emerald-50 text-emerald-600';
+      default: return 'bg-gray-50 text-gray-500';
     }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="p-6 border-b border-gray-200">
-        <h2 className="text-lg font-semibold text-gray-900">Actividades Recientes</h2>
-        <p className="text-sm text-gray-600">Últimas actividades en el sistema</p>
-      </div>
-      
-      <div className="divide-y divide-gray-200">
+    <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+      <div className="divide-y divide-slate-50">
         {activities.map((activity) => {
           const Icon = getActivityIcon(activity.type);
           return (
-            <div key={activity.id} className="p-4 hover:bg-gray-50 transition-colors">
-              <div className="flex items-start space-x-3">
-                <div className={`p-2 rounded-full ${getActivityColor(activity.type)}`}>
+            <div key={activity.id} className="p-5 hover:bg-slate-50 transition-all duration-300 cursor-pointer group">
+              <div className="flex items-center gap-4">
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", getActivityStyles(activity.type))}>
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                  <p className="text-sm text-gray-600">{activity.description}</p>
-                  <div className="flex items-center mt-1 space-x-4">
-                    <span className="text-xs text-gray-500">{activity.date}</span>
-                    <span className="text-xs font-medium text-green-600">{activity.status}</span>
+                  <div className="flex items-center justify-between gap-2 mb-0.5">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{activity.title}</p>
+                    <span className="text-[11px] font-medium text-slate-400 shrink-0">{activity.date}</span>
+                  </div>
+                  <p className="text-sm text-slate-500 truncate mb-2 font-normal">{activity.description}</p>
+                  <div className="flex items-center gap-2">
+                    <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-md", getActivityStyles(activity.type))}>
+                        {activity.status}
+                    </span>
                   </div>
                 </div>
+                <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 group-hover:translate-x-1 transition-all" />
               </div>
             </div>
           );
         })}
-      </div>
-      
-      <div className="p-4 border-t border-gray-200">
-        <button className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-medium">
-          Ver todas las actividades
-        </button>
       </div>
     </div>
   );

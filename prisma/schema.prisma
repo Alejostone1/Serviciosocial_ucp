@@ -201,6 +201,7 @@ model Convocatoria {
   publicado_en             DateTime?                @db.Timestamptz(6)
   actividades              Actividad[]
   certificados             Certificado[]
+  reportes_horas           ReporteHoras[]
   categoria                CategoriaServicioSocial? @relation(fields: [id_categoria], references: [id])
   programa                 Programa?                @relation(fields: [id_programa], references: [id])
   publicador               Usuario                  @relation("ConvocatoriaPublicador", fields: [publicado_por], references: [id])
@@ -270,31 +271,56 @@ model Actividad {
 
 /// Reportes de horas realizadas por estudiantes en actividades
 model ReporteHoras {
-  id                  String           @id @default(uuid()) @db.Uuid
-  id_estudiante       String           @db.Uuid
-  id_actividad        String           @db.Uuid
-  horas_reportadas    Decimal          @db.Decimal(5, 2)
-  horas_aprobadas     Decimal?         @db.Decimal(5, 2)
-  estado              EstadoReporte    @default(REPORTADO)
+  id                  String               @id @default(uuid()) @db.Uuid
+  id_estudiante       String               @db.Uuid
+  id_actividad        String               @db.Uuid
+  id_convocatoria     String?              @db.Uuid  /// Denormalizado para consultas directas por convocatoria
+  horas_reportadas    Decimal              @db.Decimal(5, 2)
+  horas_aprobadas     Decimal?             @db.Decimal(5, 2)
+  estado              EstadoReporte        @default(REPORTADO)
   descripcion_trabajo String?
-  archivos_soporte    Json?
+  fecha_actividad     DateTime?            @db.Date    /// Fecha real en que se realizó la actividad
   notas_estudiante    String?
-  id_revisor          String?          @db.Uuid
+  id_revisor          String?              @db.Uuid
   notas_revisor       String?
   motivo_rechazo      String?
-  reportado_en        DateTime         @default(now()) @db.Timestamptz(6)
-  revisado_en         DateTime?        @db.Timestamptz(6)
+  reportado_en        DateTime             @default(now()) @db.Timestamptz(6)
+  revisado_en         DateTime?            @db.Timestamptz(6)
+  // Relaciones
+  evidencias          EvidenciaReporte[]
   historial           HistorialHoras[]
-  actividad           Actividad        @relation(fields: [id_actividad], references: [id])
-  estudiante          Usuario          @relation("ReporteEstudiante", fields: [id_estudiante], references: [id])
-  revisor             Usuario?         @relation("ReporteRevisor", fields: [id_revisor], references: [id])
+  actividad           Actividad            @relation(fields: [id_actividad], references: [id])
+  convocatoria        Convocatoria?        @relation(fields: [id_convocatoria], references: [id])
+  estudiante          Usuario              @relation("ReporteEstudiante", fields: [id_estudiante], references: [id])
+  revisor             Usuario?             @relation("ReporteRevisor", fields: [id_revisor], references: [id])
 
   @@index([id_estudiante, estado])
   @@index([id_actividad])
+  @@index([id_convocatoria, estado])
   @@index([id_revisor, estado])
   @@index([estado])
-  @@index([reportado_en])
+  @@index([reportado_en(sort: Desc)])
+  @@index([fecha_actividad])
   @@map("reportes_horas")
+}
+
+/// Evidencias adjuntas a un reporte de horas (texto, imagen o documento)
+model EvidenciaReporte {
+  id               String           @id @default(uuid()) @db.Uuid
+  id_reporte       String           @db.Uuid
+  tipo             TipoEvidencia    @default(TEXTO)
+  contenido_texto  String?          @db.Text          /// Para evidencias de tipo TEXTO
+  archivo_url      String?          @db.VarChar(500)  /// URL del archivo en almacenamiento
+  archivo_nombre   String?          @db.VarChar(200)  /// Nombre original del archivo
+  archivo_mime     String?          @db.VarChar(100)  /// Tipo MIME (image/png, application/pdf...)
+  peso_bytes       Int?                               /// Tamaño en bytes (MAX: 5 242 880 = 5 MB)
+  public_id        String?          @db.VarChar(255)  /// ID en Cloudinary u otro proveedor
+  subido_en        DateTime         @default(now()) @db.Timestamptz(6)
+  reporte          ReporteHoras     @relation(fields: [id_reporte], references: [id], onDelete: Cascade)
+
+  @@index([id_reporte])
+  @@index([tipo])
+  @@map("evidencias_reporte")
 }
 
 /// Trazabilidad de cambios en reportes de horas (auditoría)
@@ -472,6 +498,8 @@ enum EstadoPostulacion {
 enum EstadoReporte {
   REPORTADO
   PENDIENTE_VALIDACION
+  VALIDADO_AUXILIAR
+  PENDIENTE_APROBACION_FINAL
   EN_REVISION
   APROBADO
   RECHAZADO
@@ -502,6 +530,13 @@ enum TipoActividad {
   ADMINISTRATIVA
   INVESTIGACION
   COMUNITARIA
+}
+
+/// Tipos de evidencia que puede adjuntar un estudiante en su reporte
+enum TipoEvidencia {
+  TEXTO      /// Descripción o nota escrita
+  IMAGEN     /// Foto JPG, PNG, WEBP (max 5 MB)
+  DOCUMENTO  /// PDF, DOCX u otro documento (max 5 MB)
 }
 
 /// Tipos de notificación

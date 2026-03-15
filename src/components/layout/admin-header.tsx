@@ -12,10 +12,20 @@ interface AdminHeaderProps {
 export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
     const { data: session } = useSession();
 
-    const handleSignOut = async () => {
-        toast.loading('Cerrando sesión de administrador...', { duration: 2000 });
-        await new Promise(resolve => setTimeout(resolve, 800));
-        signOut({ callbackUrl: '/login' });
+    const handleSignOut = () => {
+        toast.message('¿Estás seguro de que quieres cerrar sesión?', {
+            description: 'Perderás el acceso al panel administrativo hasta que vuelvas a ingresar.',
+            action: {
+                label: 'Cerrar Sesión',
+                onClick: () => {
+                    signOut({ callbackUrl: '/' });
+                },
+            },
+            cancel: {
+                label: 'Cancelar',
+                onClick: () => toast.dismiss(),
+            },
+        });
     };
 
     return (

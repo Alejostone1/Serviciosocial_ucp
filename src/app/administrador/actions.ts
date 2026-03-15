@@ -69,9 +69,13 @@ export async function getDashboardStats() {
             where: { estado: EstadoPostulacion.PENDIENTE }
         }),
 
-        // Reportes en REVISIÓN
+        // Reportes en REVISIÓN (Incluye los nuevos estados del Auxiliar)
         prisma.reporteHoras.count({
-            where: { estado: EstadoReporte.EN_REVISION }
+            where: { 
+                estado: {
+                    in: [EstadoReporte.EN_REVISION, EstadoReporte.REPORTADO, EstadoReporte.PENDIENTE_VALIDACION, 'VALIDADO_AUXILIAR' as any]
+                }
+            }
         }),
 
         // Certificados Vigentes

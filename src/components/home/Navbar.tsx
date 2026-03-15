@@ -11,7 +11,7 @@ export function Navbar() {
           {/* Logo Area Minimalista */}
           <div className="flex-shrink-0 flex items-center">
             <Link href="/" className="focus:outline-none focus:ring-2 focus:ring-[#8B1E1E]/50 rounded-lg transition-all hover:opacity-90">
-              <UCPLogo variant="wide" size={45} priority />
+              <UCPLogo variant="wide" size={45} />
             </Link>
           </div>
 

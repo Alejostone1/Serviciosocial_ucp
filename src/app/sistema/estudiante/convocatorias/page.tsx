@@ -115,7 +115,7 @@ export default function ConvocatoriasPage() {
           <p className="text-slate-500 mb-6">{error}</p>
           <button
             onClick={recargar}
-            className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition"
+            className="px-6 py-2.5 bg-[#8B1E1E] text-white rounded-xl hover:bg-[#a32424] transition"
           >
             Reintentar
           </button>
@@ -141,7 +141,7 @@ export default function ConvocatoriasPage() {
               placeholder="Buscar por título o descripción..."
               value={filtros.buscar}
               onChange={(e) => actualizarFiltros({ buscar: e.target.value })}
-              className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-600 text-slate-900 transition-shadow outline-none"
+              className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-[#8B1E1E]/20 text-slate-900 transition-shadow outline-none"
             />
           </div>
 
@@ -151,7 +151,7 @@ export default function ConvocatoriasPage() {
               className={twMerge(clsx(
                 "flex items-center gap-2 px-4 py-2.5 rounded-xl transition-colors font-medium text-sm",
                 mostrarFiltros || (filtros.categoria !== 'todas' || filtros.modalidad !== 'todas')
-                  ? "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
+                  ? "bg-[#8B1E1E]/10 text-[#8B1E1E] hover:bg-[#8B1E1E]/15"
                   : "bg-slate-50 text-slate-700 hover:bg-slate-100"
               ))}
             >
@@ -178,7 +178,7 @@ export default function ConvocatoriasPage() {
               <select
                 value={filtros.modalidad}
                 onChange={(e) => actualizarFiltros({ modalidad: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none text-sm text-slate-800"
+                className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-[#8B1E1E]/20 outline-none text-sm text-slate-800"
               >
                 <option value="todas">Todas las modalidades</option>
                 <option value="PRESENCIAL">Presencial</option>
@@ -191,7 +191,7 @@ export default function ConvocatoriasPage() {
               <select
                 value={filtros.categoria}
                 onChange={(e) => actualizarFiltros({ categoria: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none text-sm text-slate-800"
+                className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-[#8B1E1E]/20 outline-none text-sm text-slate-800"
               >
                 <option value="todas">Todas las categorías</option>
                 <option value="EDUCACIÓN">Educación</option>
@@ -206,7 +206,7 @@ export default function ConvocatoriasPage() {
               <select
                 value={filtros.estado}
                 onChange={(e) => actualizarFiltros({ estado: e.target.value })}
-                className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none text-sm text-slate-800"
+                className="w-full px-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-[#8B1E1E]/20 outline-none text-sm text-slate-800"
               >
                 <option value="PUBLICADA">Publicadas</option>
                 <option value="EN_CURSO">En curso</option>
@@ -219,7 +219,7 @@ export default function ConvocatoriasPage() {
 
       {cargando && convocatorias.length === 0 ? (
         <div className="flex justify-center items-center py-20">
-          <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin" />
+          <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-[#8B1E1E] animate-spin" />
         </div>
       ) : convocatorias.length === 0 ? (
         <EmptyState
@@ -259,7 +259,7 @@ export default function ConvocatoriasPage() {
                   </div>
 
                   {/* Content */}
-                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors mb-2 line-clamp-2">
+                  <h3 className="text-xl font-bold text-slate-900 group-hover:text-[#8B1E1E] transition-colors mb-2 line-clamp-2">
                     {conv.titulo}
                   </h3>
                   <p className="text-slate-500 text-sm mb-6 flex-1 line-clamp-3">
@@ -287,7 +287,7 @@ export default function ConvocatoriasPage() {
                         <div className="flex justify-between text-xs font-semibold mb-1/5 mb-1.5 text-slate-600">
                           <span>Cupos ({conv._count.postulaciones}/{conv.cupo_maximo})</span>
                         </div>
-                        <ProgressBar value={conv._count.postulaciones} max={conv.cupo_maximo} showLabel={false} size="sm" colorClass={isFull ? 'bg-rose-500' : 'bg-indigo-500'} />
+                        <ProgressBar value={conv._count.postulaciones} max={conv.cupo_maximo} showLabel={false} size="sm" colorClass={isFull ? 'bg-rose-500' : 'bg-[#8B1E1E]'} />
                       </div>
                     )}
                   </div>
@@ -303,7 +303,7 @@ export default function ConvocatoriasPage() {
                           ? "bg-emerald-50 text-emerald-600 cursor-not-allowed"
                           : isFull
                             ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                            : "bg-slate-900 text-white hover:bg-indigo-600 hover:shadow-md"
+                            : "bg-[#8B1E1E] text-white hover:bg-[#a32424] hover:shadow-md shadow-sm shadow-red-900/10"
                       ))}
                     >
                       {cargandoPostulacion && convocatoriaSeleccionada === conv.id ? (

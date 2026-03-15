@@ -134,7 +134,7 @@ export async function getReportesPendientesRevision() {
     const reportes = await prisma.reporteHoras.findMany({
       where: {
         estado: {
-          in: [EstadoReporte.PENDIENTE_VALIDACION, EstadoReporte.EN_REVISION],
+          in: [EstadoReporte.PENDIENTE_VALIDACION, EstadoReporte.EN_REVISION, 'VALIDADO_AUXILIAR' as any],
         },
       },
       include: {

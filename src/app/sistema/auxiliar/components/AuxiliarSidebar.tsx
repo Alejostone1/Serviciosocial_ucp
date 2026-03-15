@@ -6,8 +6,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
-  Calendar,
-  Activity,
+  CheckCircle,
   FileText,
   Clock,
   Users,
@@ -16,58 +15,60 @@ import {
   Settings,
   HelpCircle,
   X,
+  ShieldCheck,
+  ClipboardCheck,
 } from 'lucide-react';
 import { UCPLogo } from '@/components/ui/UCPLogo';
 
 const menuItems = [
   {
     title: 'Dashboard',
-    href: '/sistema/profesor/dashboard',
+    href: '/sistema/auxiliar/dashboard',
     icon: LayoutDashboard,
   },
   {
     title: 'Convocatorias',
-    href: '/sistema/profesor/convocatorias',
-    icon: Calendar,
-  },
-  {
-    title: 'Postulaciones',
-    href: '/sistema/profesor/postulaciones',
+    href: '/sistema/auxiliar/convocatorias',
     icon: FileText,
   },
   {
     title: 'Actividades',
-    href: '/sistema/profesor/actividades',
-    icon: Activity,
+    href: '/sistema/auxiliar/actividades',
+    icon: ClipboardCheck,
   },
   {
-    title: 'Reportes de Horas',
-    href: '/sistema/profesor/reportes',
-    icon: Clock,
+    title: 'Validación de Horas',
+    href: '/sistema/auxiliar/validacion',
+    icon: ShieldCheck,
+  },
+  {
+    title: 'Postulaciones',
+    href: '/sistema/auxiliar/postulaciones',
+    icon: ClipboardCheck,
   },
   {
     title: 'Estudiantes',
-    href: '/sistema/profesor/estudiantes',
+    href: '/sistema/auxiliar/estudiantes',
     icon: Users,
   },
   {
-    title: 'Certificados',
-    href: '/sistema/profesor/certificados',
-    icon: Award,
+    title: 'Reportes Generales',
+    href: '/sistema/auxiliar/reportes',
+    icon: FileText,
   },
 ];
 
 const secondaryItems = [
-  { title: 'Configuración', icon: Settings, href: '/sistema/profesor/configuracion' },
-  { title: 'Ayuda', icon: HelpCircle, href: '/sistema/profesor/ayuda' },
+  { title: 'Configuración', icon: Settings, href: '/sistema/auxiliar/configuracion' },
+  { title: 'Ayuda', icon: HelpCircle, href: '/sistema/auxiliar/ayuda' },
 ];
 
-interface ProfesorSidebarProps {
+interface AuxiliarSidebarProps {
     isMobileMenuOpen?: boolean;
     setIsMobileMenuOpen?: (open: boolean) => void;
 }
 
-export function ProfesorSidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: ProfesorSidebarProps) {
+export function AuxiliarSidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: AuxiliarSidebarProps) {
   const pathname = usePathname();
   const [isCollapsed, setIsCollapsed] = React.useState(false);
 
@@ -94,10 +95,10 @@ export function ProfesorSidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: Profe
             <UCPLogo variant="round" size={42} />
             {!isCollapsed && (
               <div className="flex flex-col animate-in fade-in slide-in-from-left-2 duration-500">
-                <span className="font-bold text-slate-800 tracking-tight leading-none text-lg">UCP <span className="text-[#8B1E1E]">Profesor</span></span>
+                <span className="font-semibold text-slate-800 tracking-tight leading-none text-lg">UCP <span className="text-[#8B1E1E]">Auxiliar</span></span>
                 <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-[0.2em] mt-1.5 flex items-center gap-1.5">
                     <div className="w-1 h-1 bg-[#8B1E1E] rounded-full"></div>
-                    Servicio Social
+                    Soporte Administrativo
                 </span>
               </div>
             )}
@@ -114,7 +115,7 @@ export function ProfesorSidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: Profe
         {/* Main Navigation */}
         <nav className="flex-1 px-4 space-y-10 overflow-y-auto custom-scrollbar">
           <div className="space-y-1.5">
-            {!isCollapsed && <p className="px-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-4">Menú Principal</p>}
+            {!isCollapsed && <p className="px-4 text-[10px] font-semibold text-slate-300 uppercase tracking-widest mb-4">Gestión y Control</p>}
             {menuItems.map((item) => {
               const isActive = pathname === item.href;
               return (
@@ -150,7 +151,7 @@ export function ProfesorSidebar({ isMobileMenuOpen, setIsMobileMenuOpen }: Profe
 
           {/* Secondary Links */}
           <div className="space-y-1.5 pb-10">
-            {!isCollapsed && <p className="px-4 text-[10px] font-bold text-slate-300 uppercase tracking-widest mb-4">Soporte técnico</p>}
+            {!isCollapsed && <p className="px-4 text-[10px] font-semibold text-slate-300 uppercase tracking-widest mb-4">Soporte técnico</p>}
             {secondaryItems.map((item) => (
               <Link
                 key={item.href}

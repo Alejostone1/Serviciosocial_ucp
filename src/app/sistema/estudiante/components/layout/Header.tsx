@@ -1,9 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Menu, Bell, User, LogOut, ChevronRight, Home } from 'lucide-react';
+import { Menu, User, LogOut, ChevronRight, Home } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { signOut } from 'next-auth/react';
+import { toast } from 'sonner';
 import { NotificationBell } from '../ui/NotificationBell';
 
 interface HeaderProps {
@@ -14,9 +16,25 @@ export function Header({ onMenuClick }: HeaderProps) {
     const pathname = usePathname();
     const [showUserMenu, setShowUserMenu] = React.useState(false);
 
+    const handleLogout = () => {
+        toast.message('¿Estás seguro de que quieres cerrar sesión?', {
+            description: 'Tendrás que volver a ingresar tus credenciales.',
+            action: {
+                label: 'Cerrar Sesión',
+                onClick: () => {
+                    signOut({ callbackUrl: '/' });
+                },
+            },
+            cancel: {
+                label: 'Cancelar',
+                onClick: () => toast.dismiss(),
+            },
+        });
+    };
+
     // Generate basic breadcrumbs
     const pathSegments = pathname.split('/').filter(p => p);
-    const breadcrumbs = pathSegments.map((segment, index) => {
+    const breadcrumbs = pathSegments.map((segment: string, index: number) => {
         const title = segment.replace(/-/g, ' ');
         const isLast = index === pathSegments.length - 1;
         const href = `/${pathSegments.slice(0, index + 1).join('/')}`;
@@ -94,7 +112,10 @@ export function Header({ onMenuClick }: HeaderProps) {
                                     Mi Perfil
                                 </Link>
                                 <hr className="my-1 border-slate-100" />
-                                <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium">
+                                <button 
+                                    onClick={handleLogout}
+                                    className="w-full flex items-center gap-3 px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium"
+                                >
                                     <LogOut className="w-4 h-4" />
                                     Cerrar Sesión
                                 </button>
@@ -104,5 +125,6 @@ export function Header({ onMenuClick }: HeaderProps) {
                 </div>
             </div>
         </header>
+
     );
 }

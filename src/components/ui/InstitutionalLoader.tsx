@@ -4,7 +4,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { UCPLogo } from '@/components/ui/UCPLogo';
 
-export function InstitutionalLoader({ priority = true }: { priority?: boolean }) {
+export function InstitutionalLoader({ priority = false }: { priority?: boolean }) {
     return (
         <div className="flex flex-col items-center justify-center py-12 px-4 space-y-4">
             <motion.div

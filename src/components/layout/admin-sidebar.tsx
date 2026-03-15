@@ -98,10 +98,10 @@ export function AdminSidebar({ isMobileOpen, setMobileOpen }: AdminSidebarProps)
                     <div className={`flex items-center gap-3 overflow-hidden ${isCollapsed ? 'justify-center w-full' : ''}`}>
                         {/* Logo redondo cuando está colapsado, wide cuando expandido */}
                         {isCollapsed ? (
-                            <UCPLogo variant="round" size={36} priority />
+                            <UCPLogo variant="round" size={36} />
                         ) : (
                             <>
-                                <UCPLogo variant="round" size={36} priority />
+                                <UCPLogo variant="round" size={36} />
                                 <div className="flex flex-col truncate">
                                     <span className="text-sm font-bold text-[#1e293b] leading-tight">Servicio Social</span>
                                     <span className="text-[10px] text-[#64748b] tracking-wider uppercase font-semibold">Administrador</span>
