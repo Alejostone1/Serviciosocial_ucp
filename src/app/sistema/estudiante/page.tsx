@@ -32,7 +32,7 @@ export default async function EstudianteDashboardPage() {
             >
                 <Link
                     href="/estudiante/mis-horas/reportar"
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#8B1E1E] text-white rounded-xl font-semibold hover:bg-[#731919] transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-[#8B1E1E]"
                 >
                     <Clock className="w-4 h-4" />
                     <span className="hidden sm:inline">Reportar Horas</span>
@@ -51,31 +51,41 @@ export default async function EstudianteDashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
                     title="Horas Completadas"
-                    value={`${progress.currentHours} / ${progress.requiredHours}`}
-                    description="Horas aprobadas"
+                    value={`${progress.currentHours}`}
+                    subtitle={`de ${progress.requiredHours}h`}
+                    description="Horas aprobadas este semestre"
                     icon={Clock}
-                    colorClass="text-indigo-600 bg-indigo-50"
+                    colorClass="text-[#8B1E1E] bg-[#8B1E1E]/10"
+                    progress={progress.percentage}
                 />
                 <StatsCard
-                    title="Avance Total"
+                    title="Progreso Total"
                     value={`${Math.round(progress.percentage)}%`}
-                    description="Progreso del requisito"
+                    description="Del requisito de servicio social"
                     icon={TrendingUp}
                     colorClass="text-emerald-600 bg-emerald-50"
+                    progress={progress.percentage}
+                    trend={{
+                        value: 12,
+                        label: "vs mes anterior",
+                        isPositive: true
+                    }}
                 />
                 <StatsCard
                     title="Proyectos Activos"
                     value={activeProjects.length}
-                    description="Donde estás participando"
+                    description="Convocatorias en participación"
                     icon={Briefcase}
                     colorClass="text-amber-600 bg-amber-50"
+                    subtitle="proyectos"
                 />
                 <StatsCard
                     title="Certificados"
                     value={progress.percentage >= 100 ? 1 : 0}
                     description="Disponibles para descargar"
                     icon={Award}
-                    colorClass="text-rose-600 bg-rose-50"
+                    colorClass="text-[#8B1E1E] bg-[#8B1E1E]/10"
+                    subtitle="documento"
                 />
             </div>
 
@@ -92,8 +102,8 @@ export default async function EstudianteDashboardPage() {
                                 value={progress.currentHours}
                                 max={progress.requiredHours}
                                 size="lg"
-                                colorClass="bg-indigo-600"
-                                bgClass="bg-indigo-50"
+                                colorClass="bg-[#8B1E1E]"
+                                bgClass="bg-[#8B1E1E]/10"
                             />
                         </div>
                         {progress.percentage >= 100 && (
@@ -114,7 +124,7 @@ export default async function EstudianteDashboardPage() {
                     title="Mis Proyectos Activos"
                     icon={CheckSquare}
                     headerAction={
-                        <Link href="/estudiante/mis-postulaciones" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                        <Link href="/sistema/estudiante/mis-postulaciones" className="text-sm font-semibold text-[#8B1E1E] hover:text-[#731919] flex items-center gap-1">
                             Ver todos <ArrowRight className="w-4 h-4" />
                         </Link>
                     }
@@ -122,10 +132,10 @@ export default async function EstudianteDashboardPage() {
                     {activeProjects.length > 0 ? (
                         <div className="space-y-4">
                             {activeProjects.slice(0, 3).map((project: any) => (
-                                <div key={project.id} className="group p-4 rounded-xl border border-slate-100 bg-white hover:border-indigo-100 hover:shadow-sm transition-all">
+                                <div key={project.id} className="group p-4 rounded-xl border border-slate-100 bg-white hover:border-[#8B1E1E]/20 hover:shadow-sm transition-all">
                                     <div className="flex justify-between items-start gap-4">
                                         <div>
-                                            <h4 className="font-bold text-slate-800 line-clamp-1 group-hover:text-indigo-600 transition-colors">
+                                            <h4 className="font-bold text-slate-800 line-clamp-1 group-hover:text-[#8B1E1E] transition-colors">
                                                 {project.nombre}
                                             </h4>
                                             <p className="text-sm text-slate-500 mt-1">{project.organizacion}</p>
@@ -159,7 +169,7 @@ export default async function EstudianteDashboardPage() {
                     title="Nuevas Convocatorias"
                     icon={Briefcase}
                     headerAction={
-                        <Link href="/estudiante/convocatorias" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1">
+                        <Link href="/sistema/estudiante/convocatorias" className="text-sm font-semibold text-[#8B1E1E] hover:text-[#731919] flex items-center gap-1">
                             Ver todas <ArrowRight className="w-4 h-4" />
                         </Link>
                     }
@@ -169,7 +179,7 @@ export default async function EstudianteDashboardPage() {
                             {availableOpportunities.slice(0, 3).map((opp: any) => (
                                 <div key={opp.id} className="group p-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                                     <div className="flex-1 min-w-0">
-                                        <h4 className="font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">
+                                        <h4 className="font-bold text-slate-800 truncate group-hover:text-[#8B1E1E] transition-colors">
                                             {opp.titulo}
                                         </h4>
                                         <p className="text-sm text-slate-500 mt-1 line-clamp-1">{opp.organizacion}</p>
@@ -180,7 +190,7 @@ export default async function EstudianteDashboardPage() {
                                         </span>
                                         <Link
                                             href={`/estudiante/convocatorias/${opp.id}`}
-                                            className="p-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors"
+                                            className="p-2 bg-[#8B1E1E]/10 text-[#8B1E1E] rounded-lg hover:bg-[#8B1E1E] hover:text-white transition-colors"
                                         >
                                             <ArrowRight className="w-4 h-4" />
                                         </Link>

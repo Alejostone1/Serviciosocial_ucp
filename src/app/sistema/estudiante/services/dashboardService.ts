@@ -16,13 +16,22 @@ async function getCurrentStudent() {
 export async function getStudentProgress() {
     const student = await getCurrentStudent();
     
-    // Obtener el perfil del estudiante
+    // Obtener el perfil del estudiante con programa
     const perfil = await db.execute(async (prisma) => {
-        return await prisma.perfilEstudiante.findUnique({
-            where: { id_usuario: student.id },
+        return await prisma.usuario.findUnique({
+            where: { id: student.id },
             select: {
-                horas_acumuladas: true,
-                porcentaje_avance: true
+                perfil_estudiante: {
+                    select: {
+                        horas_acumuladas: true,
+                        porcentaje_avance: true
+                    }
+                },
+                programa: {
+                    select: {
+                        horas_requeridas: true
+                    }
+                }
             }
         });
     }, 'Error al obtener progreso del estudiante');
@@ -38,8 +47,8 @@ export async function getStudentProgress() {
         };
     }
 
-    const currentHours = transformedPerfil.horas_acumuladas || 0;
-    const requiredHours = 180; // Valor estándar
+    const currentHours = transformedPerfil.perfil_estudiante?.horas_acumuladas || 0;
+    const requiredHours = transformedPerfil.programa?.horas_requeridas || 180;
     const percentage = Math.min((currentHours / requiredHours) * 100, 100);
 
     return {
@@ -63,7 +72,8 @@ export async function getActiveProjects() {
             include: {
                 convocatoria: {
                     include: {
-                        categoria: true
+                        categoria: true,
+                        programa: true
                     }
                 }
             }
@@ -73,16 +83,17 @@ export async function getActiveProjects() {
     const transformedProjects = transformDecimalsToNumbers(projects);
 
     return transformedProjects.map((project: any) => {
-        const estado = 'EN PROGRESO'; // Si está aceptada, está en progreso
+        // Get actual hours from activities for this postulation
+        const horasReportadas = 0; // Would need to join with reportes
         
         return {
             id: project.id,
             nombre: project.convocatoria.titulo,
-            organizacion: 'Universidad Catolica de Pereira', // Simulado - debería venir de la relación
+            organizacion: project.convocatoria.programa?.nombre || 'Programa no asignado',
             fechaInicio: project.convocatoria.fecha_inicio?.toISOString() || new Date().toISOString(),
             fechaFin: project.convocatoria.fecha_fin?.toISOString() || new Date().toISOString(),
-            horasAcumuladas: Math.floor(Math.random() * 50) + 10, // Simulado - debería venir de actividades
-            estado: estado as 'EN PROGRESO' | 'ESPERANDO APROBACIÓN' | 'RECHAZADO'
+            horasAcumuladas: horasReportadas,
+            estado: 'EN PROGRESO' as 'EN PROGRESO' | 'ESPERANDO APROBACIÓN' | 'RECHAZADO'
         };
     });
 }
@@ -102,7 +113,8 @@ export async function getAvailableOpportunities() {
                 }
             },
             include: {
-                categoria: true
+                categoria: true,
+                programa: true
             },
             orderBy: { publicado_en: 'desc' },
             take: 6 // Limitar a 6 para el dashboard
@@ -117,7 +129,7 @@ export async function getAvailableOpportunities() {
         titulo: opportunity.titulo,
         descripcion: opportunity.descripcion || '',
         horas: opportunity.horas_totales_ofrecidas || 0,
-        organizacion: 'Universidad Catolica de Pereira', // Simulado - debería venir de la relación
+        organizacion: opportunity.programa?.nombre || 'Programa no asignado',
         modalidad: opportunity.modalidad
     }));
 }

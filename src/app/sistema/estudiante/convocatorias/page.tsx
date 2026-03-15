@@ -234,7 +234,7 @@ export default function ConvocatoriasPage() {
             return (
               <div
                 key={conv.id}
-                className="group flex flex-col bg-white rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-lg transition-all duration-300 overflow-hidden relative"
+                className="group flex flex-col bg-white rounded-2xl border border-slate-200 hover:border-[#8B1E1E]/30 hover:shadow-lg transition-all duration-300 overflow-hidden relative"
               >
                 {/* Status Badge Top Right */}
                 {conv.ya_postulado && (
