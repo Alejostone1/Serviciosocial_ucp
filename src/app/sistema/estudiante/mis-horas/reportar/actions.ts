@@ -41,8 +41,10 @@ export async function getActividadesDisponibles() {
                             descripcion: true,
                             modalidad: true,
                             lugar: true,
+                            horas_totales_ofrecidas: true,
                             categoria: {
                                 select: {
+                                    id: true,
                                     nombre: true,
                                     color_hex: true
                                 }
@@ -58,7 +60,18 @@ export async function getActividadesDisponibles() {
             });
         }, 'Error al obtener actividades disponibles');
 
-        return actividades;
+        // Transform Decimal and Date fields to match interface
+        return actividades.map(actividad => ({
+            ...actividad,
+            horas_estimadas: Number(actividad.horas_estimadas),
+            horas_maximas: actividad.horas_maximas ? Number(actividad.horas_maximas) : null,
+            fecha_inicio: actividad.fecha_inicio ? actividad.fecha_inicio.toISOString() : null,
+            fecha_limite: actividad.fecha_limite ? actividad.fecha_limite.toISOString() : null,
+            convocatoria: {
+                ...actividad.convocatoria,
+                horas_totales_ofrecidas: actividad.convocatoria.horas_totales_ofrecidas ? Number(actividad.convocatoria.horas_totales_ofrecidas) : null
+            }
+        }));
     } catch (error) {
         console.error('Error en getActividadesDisponibles:', error);
         throw new Error('No se pudieron cargar las actividades disponibles');

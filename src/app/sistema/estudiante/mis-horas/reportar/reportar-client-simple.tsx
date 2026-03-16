@@ -24,7 +24,7 @@ type ReporteForm = z.infer<typeof reporteSchema>;
 interface Actividad {
     id: string;
     nombre: string;
-    descripcion: string;
+    descripcion: string | null;
     tipo_actividad: string;
     horas_estimadas: number;
     horas_maximas: number | null;
@@ -34,17 +34,16 @@ interface Actividad {
     id_convocatoria: string;
     _horasReportadasConvocatoria?: number; // 🔥 Nuevo campo para horas específicas
     convocatoria: {
-        id: string;
         titulo: string;
         descripcion: string;
         modalidad: string;
-        estado: string;
+        lugar: string | null;
         horas_totales_ofrecidas: number | null;
-    };
-    categoria: {
-        id: string;
-        nombre: string;
-        color_hex: string;
+        categoria: {
+            id: string;
+            nombre: string;
+            color_hex: string | null;
+        } | null;
     };
 }
 
