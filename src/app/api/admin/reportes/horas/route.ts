@@ -56,16 +56,7 @@ export async function GET(request: NextRequest) {
                             primer_apellido: true
                         }
                     },
-                    evidencias: {
-                        include: {
-                            subidor: {
-                                select: {
-                                    primer_nombre: true,
-                                    primer_apellido: true
-                                }
-                            }
-                        }
-                    }
+                    evidencias: true
                 },
                 orderBy: {
                     reportado_en: 'desc'

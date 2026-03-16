@@ -13,6 +13,9 @@ async function diagnosticarHoras() {
         postulaciones: {
           where: {
             estado: 'ACEPTADA'
+          },
+          include: {
+            estudiante: true
           }
         }
       }
@@ -28,7 +31,7 @@ async function diagnosticarHoras() {
       console.log(`   Postulaciones aceptadas: ${convocatoria.postulaciones.length}`);
 
       // Sumar horas estimadas de actividades
-      const horasActividades = convocatoria.actividades.reduce((sum, act) => sum + act.horas_estimadas, 0);
+      const horasActividades = convocatoria.actividades.reduce((sum, act) => sum + Number(act.horas_estimadas), 0);
       console.log(`   🔢 Suma horas de actividades: ${horasActividades}h`);
 
       // Obtener reportes de horas de esta convocatoria
