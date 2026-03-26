@@ -114,7 +114,7 @@ export default function MisActividadesPage() {
     return (
       <PageContainer>
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin" />
+          <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-[#8B1E1E] animate-spin" />
         </div>
       </PageContainer>
     );
@@ -127,7 +127,7 @@ export default function MisActividadesPage() {
           <AlertTriangle className="w-16 h-16 text-rose-500 mb-4" />
           <h2 className="text-xl font-bold text-slate-900 mb-2">Error al cargar actividades</h2>
           <p className="text-slate-500 mb-6">{errorAct}</p>
-          <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition">
+          <button onClick={() => window.location.reload()} className="px-6 py-2.5 bg-[#8B1E1E] text-white rounded-xl hover:bg-[#a32424] transition">
             Reintentar
           </button>
         </div>
@@ -143,15 +143,15 @@ export default function MisActividadesPage() {
       >
         <div className="flex gap-2">
           <Link
-            href="/estudiante/mis-postulaciones"
-            className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-xl hover:bg-slate-50 transition-colors shadow-sm font-medium"
+            href="/sistema/estudiante/mis-postulaciones"
+            className="flex items-center gap-2 px-4 py-2 border border-[#8B1E1E] bg-[#8B1E1E] text-white rounded-xl hover:bg-[#a32424] transition-colors shadow-sm font-medium"
           >
             <Users className="w-4 h-4" />
             <span className="hidden sm:inline">Postulaciones</span>
           </Link>
           <Link
-            href="/estudiante/mis-horas"
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+            href="/sistema/estudiante/mis-horas"
+            className="flex items-center gap-2 px-4 py-2 bg-[#8B1E1E] text-white rounded-xl hover:bg-[#a32424] transition-colors shadow-sm font-medium"
           >
             <Clock className="w-4 h-4" />
             <span className="hidden sm:inline">Mis Horas</span>
@@ -168,7 +168,7 @@ export default function MisActividadesPage() {
               placeholder="Buscar actividades..."
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-600 text-slate-900 transition-shadow outline-none"
+              className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-[#8B1E1E] text-slate-900 transition-shadow outline-none"
             />
           </div>
           <div className="shrink-0 flex items-center gap-2 relative">
@@ -176,7 +176,7 @@ export default function MisActividadesPage() {
             <select
               value={filtroTipo}
               onChange={(e) => setFiltroTipo(e.target.value)}
-              className="pl-9 pr-10 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-600 outline-none text-sm text-slate-800 font-medium appearance-none cursor-pointer"
+              className="pl-9 pr-10 py-2.5 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-[#8B1E1E] outline-none text-sm text-slate-800 font-medium appearance-none cursor-pointer"
             >
               <option value="todas">Todos los tipos</option>
               <option value="GENERAL">General</option>
@@ -196,7 +196,7 @@ export default function MisActividadesPage() {
           title="No hay actividades"
           description="Aún no tienes actividades disponibles. Debes ser aceptado en una convocatoria primero."
           action={
-            <Link href="/estudiante/convocatorias" className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-semibold mt-4">
+            <Link href="/sistema/estudiante/convocatorias" className="inline-flex items-center px-6 py-3 bg-[#8B1E1E] text-white rounded-xl hover:bg-[#a32424] transition font-semibold mt-4">
               Explorar Convocatorias
             </Link>
           }
@@ -215,10 +215,10 @@ export default function MisActividadesPage() {
               const tipoInfo = tipoConfig[act.tipo_actividad] || { variant: 'default', label: act.tipo_actividad };
 
               return (
-                <div key={act.id} className="group bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all flex flex-col sm:flex-row gap-6">
+                <div key={act.id} className="group bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:border-[#8B1E1E]/30 hover:shadow-md transition-all flex flex-col sm:flex-row gap-6">
                   {/* Left Icon Config */}
                   <div className="hidden sm:flex shrink-0">
-                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 flex items-center justify-center rounded-2xl group-hover:scale-110 transition-transform">
+                    <div className="w-12 h-12 bg-[#8B1E1E]/5 text-[#8B1E1E] flex items-center justify-center rounded-2xl group-hover:scale-110 transition-transform">
                       <Briefcase className="w-6 h-6" />
                     </div>
                   </div>
@@ -226,7 +226,7 @@ export default function MisActividadesPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-3">
                       <div>
-                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-indigo-600 transition-colors mb-1">{act.nombre}</h3>
+                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-[#8B1E1E] transition-colors mb-1">{act.nombre}</h3>
                         <p className="text-sm font-medium text-slate-500 mb-2 truncate">
                           Convocatoria: {act.convocatoria?.titulo}
                         </p>
@@ -269,8 +269,8 @@ export default function MisActividadesPage() {
                       )}
 
                       <Link
-                        href={`/estudiante/mis-horas/reportar?actividad=${act.id}&convocatoria=${act.convocatoria?.id}`}
-                        className="flex items-center gap-2 px-4 py-2 bg-slate-900 text-white text-sm font-semibold rounded-xl hover:bg-indigo-600 transition-colors group/btn"
+                        href={`/sistema/estudiante/mis-horas/reportar?actividad=${act.id}&convocatoria=${act.convocatoria?.id}`}
+                        className="flex items-center gap-2 px-4 py-2 bg-[#8B1E1E] text-white text-sm font-semibold rounded-xl hover:bg-[#a32424] transition-colors group/btn"
                       >
                         Reportar Horas
                         <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />

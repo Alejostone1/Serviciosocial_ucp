@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         const slug = await generateUniqueSlug(baseSlug);
 
         const noticia = await db.execute(async (prisma) => {
-            return await prisma.noticia.create({
+            const resultActual = await prisma.noticia.create({
                 data: {
                     titulo,
                     slug,
@@ -81,6 +81,20 @@ export async function POST(request: NextRequest) {
                     fecha_publicacion: publicada && fecha_publicacion ? new Date(fecha_publicacion) : null,
                 }
             });
+
+            // Registrar log de auditoría
+            await prisma.logActividad.create({
+                data: {
+                    id_usuario: session.user.id,
+                    accion: 'CREAR_NOTICIA',
+                    entidad: 'Noticia',
+                    id_entidad: resultActual.id,
+                    descripcion: `Noticia '${resultActual.titulo}' creada y ${resultActual.publicada ? 'publicada' : 'guardada como borrador'}`,
+                    resultado: 'EXITOSO',
+                }
+            });
+
+            return resultActual;
         }, 'Error al crear noticia');
 
         return NextResponse.json(noticia, { status: 201 });

@@ -83,6 +83,10 @@ export function useConvocatorias(idEstudiante?: string): UseConvocatoriasReturn 
       if (filtros.buscar) {
         params.append('buscar', filtros.buscar);
       }
+      // Enviar id_estudiante para que la API calcule ya_postulado
+      if (idEstudiante) {
+        params.append('id_estudiante', idEstudiante);
+      }
 
       const response = await fetch(`/api/convocatorias?${params.toString()}`);
       
@@ -92,32 +96,7 @@ export function useConvocatorias(idEstudiante?: string): UseConvocatoriasReturn 
 
       const data = await response.json();
       
-      // Si tenemos el ID del estudiante, verificamos si ya ha postulado
-      let convocatoriasConEstado = data.convocatorias;
-      if (idEstudiante) {
-        convocatoriasConEstado = await Promise.all(
-          data.convocatorias.map(async (conv: ConvocatoriaExtendida) => {
-            try {
-              const postResponse = await fetch(`/api/postulaciones?id_estudiante=${idEstudiante}&id_convocatoria=${conv.id}`);
-              if (postResponse.ok) {
-                const postData = await postResponse.json();
-                return {
-                  ...conv,
-                  ya_postulado: postData.postulaciones.length > 0,
-                };
-              }
-            } catch (error) {
-              console.error('Error verificando postulación:', error);
-            }
-            return {
-              ...conv,
-              ya_postulado: false,
-            };
-          })
-        );
-      }
-
-      setConvocatorias(convocatoriasConEstado);
+      setConvocatorias(data.convocatorias);
       setPaginacion(data.paginacion);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');

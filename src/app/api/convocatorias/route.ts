@@ -12,6 +12,7 @@ export async function GET(request: NextRequest) {
     const pagina = parseInt(searchParams.get('pagina') || '1');
     const limite = parseInt(searchParams.get('limite') || '10');
     const buscar = searchParams.get('buscar');
+    const id_estudiante = searchParams.get('id_estudiante');
 
     const skip = (pagina - 1) * limite;
 
@@ -63,12 +64,15 @@ export async function GET(request: NextRequest) {
               tipo_actividad: true,
             },
           },
-          postulaciones: {
+          postulaciones: id_estudiante ? {
+            where: {
+              id_estudiante: id_estudiante,
+            },
             select: {
               id: true,
               estado: true,
             },
-          },
+          } : false,
           _count: {
             select: {
               postulaciones: true,
@@ -86,13 +90,18 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Calcular cupos disponibles y estadísticas
-    const convocatoriasConEstadisticas = transformDecimalsToNumbers(convocatorias.map(conv => ({
-      ...conv,
-      cupos_disponibles: conv.cupo_maximo ? conv.cupo_maximo - conv._count.postulaciones : null,
-      porcentaje_ocupacion: conv.cupo_maximo ? (conv._count.postulaciones / conv.cupo_maximo) * 100 : null,
-      total_horas_estimadas: conv.actividades.reduce((sum, act) => sum + Number(act.horas_estimadas), 0),
-      ya_postulado: false, // Esto se establecerá en el frontend con el ID del usuario
-    })));
+    const convocatoriasConEstadisticas = convocatorias.map(conv => {
+      // Calcular ya_postulado ANTES de transformar
+      const ya_postulado = id_estudiante ? (conv.postulaciones as any[])?.length > 0 : false;
+      
+      return transformDecimalsToNumbers({
+        ...conv,
+        cupos_disponibles: conv.cupo_maximo ? conv.cupo_maximo - conv._count.postulaciones : null,
+        porcentaje_ocupacion: conv.cupo_maximo ? (conv._count.postulaciones / conv.cupo_maximo) * 100 : null,
+        total_horas_estimadas: conv.actividades.reduce((sum, act) => sum + Number(act.horas_estimadas), 0),
+        ya_postulado,
+      });
+    });
 
     return NextResponse.json({
       convocatorias: convocatoriasConEstadisticas,

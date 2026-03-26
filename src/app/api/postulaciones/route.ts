@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { EstadoPostulacion } from '@prisma/client';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -105,36 +107,31 @@ export async function POST(request: NextRequest) {
   let body: any = null;
   
   try {
+    // Verificar sesión del usuario
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'No autorizado' },
+        { status: 401 }
+      );
+    }
+    
+    const id_estudiante = session.user.id;
+    
     body = await request.json();
     const {
       id_convocatoria,
-      id_estudiante,
       motivacion,
       url_hoja_vida,
       habilidades_relevantes,
     } = body;
 
-    // Validar que los IDs sean UUIDs válidos
+    // Validar que el ID de convocatoria sea UUID válido
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     
     if (!id_convocatoria || !uuidRegex.test(id_convocatoria)) {
       return NextResponse.json(
         { error: 'ID de convocatoria inválido' },
-        { status: 400 }
-      );
-    }
-    
-    if (!id_estudiante || !uuidRegex.test(id_estudiante)) {
-      return NextResponse.json(
-        { error: 'ID de estudiante inválido' },
-        { status: 400 }
-      );
-    }
-
-    // Validaciones básicas
-    if (!id_convocatoria || !id_estudiante) {
-      return NextResponse.json(
-        { error: 'ID de convocatoria y estudiante son obligatorios' },
         { status: 400 }
       );
     }
@@ -219,6 +216,18 @@ export async function POST(request: NextRequest) {
           },
         },
       },
+    });
+
+    // Registrar en el log de actividad
+    await prisma.logActividad.create({
+      data: {
+        accion: 'POSTULACION_CREADA',
+        entidad: 'POSTULACION',
+        id_entidad: postulacion.id,
+        descripcion: `Nueva postulación de ${postulacion.estudiante.primer_nombre} ${postulacion.estudiante.primer_apellido} para la convocatoria: ${convocatoria.titulo}`,
+        id_usuario: id_estudiante,
+        resultado: 'EXITOSO'
+      }
     });
 
     return NextResponse.json(postulacion, { status: 201 });

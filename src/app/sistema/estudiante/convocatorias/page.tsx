@@ -131,8 +131,8 @@ export default function ConvocatoriasPage() {
         description="Explora y postúlate a las oportunidades de servicio social disponibles."
       />
 
-      {/* Filters Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm mb-8 z-10 sticky top-20 transition-all">
+      {/* Filters Bar - Fixed at top of screen below header */}
+      <div className="bg-white border-b border-slate-200 p-4 mb-8 z-20 sticky top-[64px] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 transition-all shadow-sm">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5 pointer-events-none" />

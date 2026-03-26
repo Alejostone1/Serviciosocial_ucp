@@ -134,3 +134,39 @@ export async function getDashboardStats() {
         }
     };
 }
+
+/**
+ * Obtener los logs de actividad más recientes para las notificaciones del administrador
+ */
+export async function getRecentLogs() {
+    await checkAdmin();
+
+    try {
+        const logs = await prisma.logActividad.findMany({
+            take: 15,
+            orderBy: { creado_en: 'desc' },
+            include: {
+                usuario: {
+                    select: {
+                        primer_nombre: true,
+                        primer_apellido: true,
+                        rol: true
+                    }
+                }
+            }
+        });
+
+        return logs.map(log => ({
+            id: log.id,
+            accion: log.accion,
+            descripcion: log.descripcion,
+            entidad: log.entidad,
+            creado_en: log.creado_en.toISOString(),
+            usuario: log.usuario ? `${log.usuario.primer_nombre} ${log.usuario.primer_apellido}` : 'Sistema',
+            rol: log.usuario?.rol || 'SISTEMA'
+        }));
+    } catch (error) {
+        console.error('Error al obtener logs:', error);
+        return [];
+    }
+}

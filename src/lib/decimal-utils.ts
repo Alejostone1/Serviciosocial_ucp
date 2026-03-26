@@ -52,6 +52,11 @@ export function transformDecimalsToNumbers(obj: any): any {
     return obj;
   }
 
+  // Si es un objeto Date, retornarlo como está
+  if (obj instanceof Date) {
+    return obj;
+  }
+
   // Si es un objeto Decimal de Prisma
   if (typeof obj === 'object' && obj.toNumber) {
     return obj.toNumber();

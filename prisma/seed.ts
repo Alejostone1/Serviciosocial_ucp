@@ -6,10 +6,16 @@ import {
   Modalidad,
   TipoActividad,
   EstadoConvocatoria,
+  EstadoPostulacion,
+  EstadoReporte,
 } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 
 function slugify(text: string): string {
   return text
@@ -22,62 +28,26 @@ function slugify(text: string): string {
     .replace(/-+/g, '-');
 }
 
-type ImagenSeed = {
-  url_imagen: string;
-  public_id_cloudinary: string;
-  orden: number;
-};
+async function hashPassword(plain: string): Promise<string> {
+  return bcrypt.hash(plain, 10);
+}
 
-type NoticiaSeed = {
-  titulo: string;
-  resumen: string;
-  contenido: string;
-  autor: string;
-  publicada: boolean;
-  fecha_publicacion: Date | null;
-  imagenes: ImagenSeed[];
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN
+// ─────────────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('🚀 Iniciando seeding principal UCP...\n');
+  console.log('🚀 Iniciando seeding UCP — Sistema de Servicio Social\n');
 
-  // ─────────────────────────────────────────────
-  // 1) ADMIN
-  // ─────────────────────────────────────────────
-  console.log('👤 Configurando usuario administrador...');
-  const adminEmail = 'adminservicio@ucp.edu.co';
-  const adminPassword = 'Android.13';
-  const hashedPassword = await bcrypt.hash(adminPassword, 10);
+  const DEFAULT_PASSWORD = 'Ucpservicio123';
+  const defaultHash = await hashPassword(DEFAULT_PASSWORD);
 
-  const admin = await prisma.usuario.upsert({
-    where: { correo: adminEmail },
-    update: {
-      contrasena_hash: hashedPassword,
-      rol: Rol.ADMINISTRADOR,
-      esta_bloqueado: false,
-      requiere_cambio_clave: false,
-    },
-    create: {
-      primer_nombre: 'Administrador',
-      segundo_nombre: 'Del',
-      primer_apellido: 'Sistema',
-      segundo_apellido: 'UCP',
-      correo: adminEmail,
-      contrasena_hash: hashedPassword,
-      numero_documento: '99999999',
-      tipo_documento: TipoDocumento.CC,
-      rol: Rol.ADMINISTRADOR,
-      esta_bloqueado: false,
-      requiere_cambio_clave: false,
-    },
-  });
-  console.log(`  ✅ Admin: ${admin.correo}`);
+  // ───────────────────────────────────────────────────────────────────────────
+  // 1. CATEGORÍAS DE SERVICIO SOCIAL
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('📁 Creando categorías de servicio social...');
 
-  // ─────────────────────────────────────────────
-  // 2) CATEGORÍAS
-  // ─────────────────────────────────────────────
-  console.log('\n📁 Creando categorías de servicio social...');
-  const categorias = [
+  const categoriasData = [
     {
       nombre: 'Educación y Pedagogía',
       descripcion: 'Tutorías, apoyo escolar y acompañamiento formativo en comunidades vulnerables.',
@@ -104,7 +74,7 @@ async function main() {
     },
   ];
 
-  for (const cat of categorias) {
+  for (const cat of categoriasData) {
     await prisma.categoriaServicioSocial.upsert({
       where: { nombre: cat.nombre },
       update: cat,
@@ -113,15 +83,20 @@ async function main() {
     console.log(`  ✅ ${cat.nombre}`);
   }
 
-  // ─────────────────────────────────────────────
-  // 3) FACULTADES
-  // ─────────────────────────────────────────────
-  console.log('\n🏛️ Creando facultades...');
-  const facultades = [
+  const catMap = Object.fromEntries(
+    (await prisma.categoriaServicioSocial.findMany()).map((c) => [c.nombre, c.id]),
+  );
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 2. FACULTADES
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n🏛️  Creando facultades...');
+
+  const facultadesData = [
     {
-      nombre: 'Facultad de Arquitectura y Diseño',
-      codigo: 'FAD',
-      descripcion: 'Arquitectura, diseño industrial, diseño audiovisual y afines.',
+      nombre: 'Facultad de Ciencias Básicas e Ingeniería',
+      codigo: 'FCBI',
+      descripcion: 'Ingenierías y tecnologías.',
       esta_activo: true,
     },
     {
@@ -131,20 +106,20 @@ async function main() {
       esta_activo: true,
     },
     {
-      nombre: 'Facultad de Ciencias Básicas e Ingeniería',
-      codigo: 'FCBI',
-      descripcion: 'Ingenierías y tecnologías.',
-      esta_activo: true,
-    },
-    {
       nombre: 'Facultad de Ciencias Económicas y Administrativas',
       codigo: 'FCEA',
       descripcion: 'Administración, mercadeo, finanzas y negocios.',
       esta_activo: true,
     },
+    {
+      nombre: 'Facultad de Arquitectura y Diseño',
+      codigo: 'FAD',
+      descripcion: 'Arquitectura, diseño industrial, diseño audiovisual y afines.',
+      esta_activo: true,
+    },
   ];
 
-  for (const fac of facultades) {
+  for (const fac of facultadesData) {
     await prisma.facultad.upsert({
       where: { nombre: fac.nombre },
       update: fac,
@@ -153,141 +128,66 @@ async function main() {
     console.log(`  ✅ ${fac.nombre}`);
   }
 
-  /** Helpers para obtener IDs por nombre/código de forma segura */
-  const getFacId = async (nombre: string) => {
+  // Helper: obtener ID de facultad por nombre (lanza si no existe)
+  const getFacId = async (nombre: string): Promise<string> => {
     const fac = await prisma.facultad.findUnique({ where: { nombre } });
-    if (!fac) throw new Error(`Facultad no encontrada: ${nombre}`);
+    if (!fac) throw new Error(`Facultad no encontrada: "${nombre}"`);
     return fac.id;
   };
 
-  const getProgId = async (codigo: string) => {
-    const prog = await prisma.programa.findUnique({ where: { codigo } });
-    if (!prog) throw new Error(`Programa no encontrado con código: ${codigo}`);
-    return prog.id;
-  };
-
-  // ─────────────────────────────────────────────
-  // 4) PROGRAMAS
-  // ─────────────────────────────────────────────
-  console.log('\n🎓 Creando programas...');
+  // ───────────────────────────────────────────────────────────────────────────
+  // 3. PROGRAMAS ACADÉMICOS
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n🎓 Creando programas académicos...');
 
   /**
-   * Cada programa declara explícitamente:
-   *  - su código único
-   *  - la facultad a la que pertenece (por nombre)
-   *  - horas requeridas según nivel de formación
+   * 5 programas: uno por cada escenario de usuario y convocatoria.
+   * horas_requeridas establecidas según nivel de formación y política UCP.
    */
-  const programas: Array<{
-    nombre: string;
-    codigo: string;
-    nivel_formacion: NivelFormacion;
-    horas_requeridas: number;
-    facultad: string;
-    esta_activo: boolean;
-  }> = [
-    // ── Facultad de Arquitectura y Diseño ──────────────────────────
-    {
-      nombre: 'Arquitectura',
-      codigo: 'ARQ',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 200,
-      facultad: 'Facultad de Arquitectura y Diseño',
-      esta_activo: true,
-    },
-    {
-      nombre: 'Diseño Audiovisual',
-      codigo: 'DAV',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 180,
-      facultad: 'Facultad de Arquitectura y Diseño',
-      esta_activo: true,
-    },
-    {
-      nombre: 'Diseño Industrial',
-      codigo: 'DIN',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 180,
-      facultad: 'Facultad de Arquitectura y Diseño',
-      esta_activo: true,
-    },
-    // ── Facultad de Ciencias Básicas e Ingeniería ──────────────────
+  const programasData = [
     {
       nombre: 'Ingeniería de Sistemas y Telecomunicaciones',
       codigo: 'IST',
       nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 200,
-      facultad: 'Facultad de Ciencias Básicas e Ingeniería',
-      esta_activo: true,
-    },
-    {
-      nombre: 'Ingeniería Industrial',
-      codigo: 'IIN',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 200,
-      facultad: 'Facultad de Ciencias Básicas e Ingeniería',
-      esta_activo: true,
-    },
-    {
-      nombre: 'Tecnología en Desarrollo de Software',
-      codigo: 'TDS',
-      nivel_formacion: NivelFormacion.TECNOLOGICO,
       horas_requeridas: 120,
       facultad: 'Facultad de Ciencias Básicas e Ingeniería',
       esta_activo: true,
     },
-    // ── Facultad de Ciencias Humanas, Sociales y de la Educación ───
     {
       nombre: 'Psicología',
       codigo: 'PSI',
       nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 180,
+      horas_requeridas: 120,
       facultad: 'Facultad de Ciencias Humanas, Sociales y de la Educación',
+      esta_activo: true,
+    },
+    {
+      nombre: 'Administración de Empresas',
+      codigo: 'ADE',
+      nivel_formacion: NivelFormacion.PREGRADO,
+      horas_requeridas: 120,
+      facultad: 'Facultad de Ciencias Económicas y Administrativas',
+      esta_activo: true,
+    },
+    {
+      nombre: 'Arquitectura',
+      codigo: 'ARQ',
+      nivel_formacion: NivelFormacion.PREGRADO,
+      horas_requeridas: 120,
+      facultad: 'Facultad de Arquitectura y Diseño',
       esta_activo: true,
     },
     {
       nombre: 'Comunicación Social – Periodismo',
       codigo: 'CSP',
       nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 160,
+      horas_requeridas: 120,
       facultad: 'Facultad de Ciencias Humanas, Sociales y de la Educación',
-      esta_activo: true,
-    },
-    {
-      nombre: 'Licenciatura en Educación Religiosa',
-      codigo: 'LER',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 160,
-      facultad: 'Facultad de Ciencias Humanas, Sociales y de la Educación',
-      esta_activo: true,
-    },
-    // ── Facultad de Ciencias Económicas y Administrativas ──────────
-    {
-      nombre: 'Administración de Empresas',
-      codigo: 'ADE',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 160,
-      facultad: 'Facultad de Ciencias Económicas y Administrativas',
-      esta_activo: true,
-    },
-    {
-      nombre: 'Mercadeo',
-      codigo: 'MER',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 160,
-      facultad: 'Facultad de Ciencias Económicas y Administrativas',
-      esta_activo: true,
-    },
-    {
-      nombre: 'Negocios Internacionales',
-      codigo: 'NEI',
-      nivel_formacion: NivelFormacion.PREGRADO,
-      horas_requeridas: 160,
-      facultad: 'Facultad de Ciencias Económicas y Administrativas',
       esta_activo: true,
     },
   ];
 
-  for (const { facultad, ...data } of programas) {
+  for (const { facultad, ...data } of programasData) {
     const id_facultad = await getFacId(facultad);
     await prisma.programa.upsert({
       where: { nombre: data.nombre },
@@ -297,104 +197,332 @@ async function main() {
     console.log(`  ✅ [${data.codigo}] ${data.nombre}`);
   }
 
-  // ─────────────────────────────────────────────
-  // 5) CONVOCATORIAS
-  // ─────────────────────────────────────────────
+  // Helper: obtener ID de programa por código (lanza si no existe)
+  const getProgId = async (codigo: string): Promise<string> => {
+    const prog = await prisma.programa.findUnique({ where: { codigo } });
+    if (!prog) throw new Error(`Programa no encontrado con código: "${codigo}"`);
+    return prog.id;
+  };
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 4. USUARIOS
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n👤 Creando usuarios del sistema...');
+
+  // ── 4.1 Administrador ───────────────────────────────────────────────────
+  const adminEmail    = 'administrador@ucp.edu.co';
+  const adminPassword = 'Android.13';
+  const adminHash     = await hashPassword(adminPassword);
+
+  const admin = await prisma.usuario.upsert({
+    where: { correo: adminEmail },
+    update: {
+      contrasena_hash: adminHash,
+      rol: Rol.ADMINISTRADOR,
+      esta_bloqueado: false,
+      requiere_cambio_clave: false,
+    },
+    create: {
+      primer_nombre:    'Administrador',
+      segundo_nombre:   'Del',
+      primer_apellido:  'Sistema',
+      segundo_apellido: 'UCP',
+      correo:           adminEmail,
+      contrasena_hash:  adminHash,
+      numero_documento: '99999999',
+      tipo_documento:   TipoDocumento.CC,
+      rol:              Rol.ADMINISTRADOR,
+      esta_bloqueado:        false,
+      requiere_cambio_clave: false,
+    },
+  });
+  console.log(`  ✅ [ADMINISTRADOR] ${admin.correo}`);
+
+  // ── 4.2 Profesor ────────────────────────────────────────────────────────
+  const idProgIST = await getProgId('IST');
+
+  const profesor = await prisma.usuario.upsert({
+    where: { correo: 'profesor@ucp.edu.co' },
+    update: { contrasena_hash: defaultHash },
+    create: {
+      primer_nombre:   'Carlos',
+      primer_apellido: 'Rodríguez',
+      correo:          'profesor@ucp.edu.co',
+      contrasena_hash: defaultHash,
+      numero_documento: '11223344',
+      tipo_documento:   TipoDocumento.CC,
+      rol:              Rol.PROFESOR,
+      id_programa:      idProgIST,
+      telefono:         '3209876543',
+    },
+  });
+  console.log(`  ✅ [PROFESOR] ${profesor.correo}`);
+
+  // ── 4.3 Auxiliar ────────────────────────────────────────────────────────
+  const auxiliar = await prisma.usuario.upsert({
+    where: { correo: 'auxiliar@ucp.edu.co' },
+    update: { contrasena_hash: defaultHash },
+    create: {
+      primer_nombre:   'Andrea',
+      primer_apellido: 'Castro',
+      correo:          'auxiliar@ucp.edu.co',
+      contrasena_hash: defaultHash,
+      numero_documento: '1098765432',
+      tipo_documento:   TipoDocumento.CC,
+      rol:              Rol.AUXILIAR,
+      telefono:         '3112223344',
+    },
+  });
+  console.log(`  ✅ [AUXILIAR] ${auxiliar.correo}`);
+
+  // ── 4.4 Aliado ──────────────────────────────────────────────────────────
+  const aliado = await prisma.usuario.upsert({
+    where: { correo: 'aliado@ucp.edu.co' },
+    update: { contrasena_hash: defaultHash },
+    create: {
+      primer_nombre:   'Fundación',
+      primer_apellido: 'Comunidad Activa',
+      correo:          'aliado@ucp.edu.co',
+      contrasena_hash: defaultHash,
+      numero_documento: '900123456',
+      tipo_documento:   TipoDocumento.NIT,
+      rol:              Rol.ALIADO,
+      telefono:         '3001234567',
+    },
+  });
+  console.log(`  ✅ [ALIADO] ${aliado.correo}`);
+
+  // ── 4.5 Estudiante 1 (flujo completo) ───────────────────────────────────
+  const idProgPSI = await getProgId('PSI');
+
+  const estudiante1 = await prisma.usuario.upsert({
+    where: { correo: 'estudiante1@ucp.edu.co' },
+    update: { contrasena_hash: defaultHash },
+    create: {
+      primer_nombre:   'María',
+      primer_apellido: 'García',
+      correo:          'estudiante1@ucp.edu.co',
+      contrasena_hash: defaultHash,
+      numero_documento: '87654321',
+      tipo_documento:   TipoDocumento.CC,
+      rol:              Rol.ESTUDIANTE,
+      id_programa:      idProgPSI,
+      telefono:         '3152345678',
+    },
+  });
+
+  // Perfil de estudiante 1 — inicialmente sin horas cumplidas
+  await prisma.perfilEstudiante.upsert({
+    where: { id_usuario: estudiante1.id },
+    update: {},
+    create: {
+      id_usuario:         estudiante1.id,
+      codigo_estudiantil: '2024PSI001',
+      semestre_actual:    5,
+      horas_previas:      0,
+      horas_acumuladas:   0,
+      porcentaje_avance:  0,
+      habilidades:        ['Empatía', 'Escucha activa', 'Comunicación asertiva'],
+      intereses:          ['Salud mental', 'Comunidades vulnerables', 'Inclusión social'],
+      modalidad_preferida: Modalidad.PRESENCIAL,
+    },
+  });
+  console.log(`  ✅ [ESTUDIANTE] ${estudiante1.correo}`);
+
+  // ── 4.6 Estudiante 2 (sin inscripciones) ────────────────────────────────
+  const idProgADE = await getProgId('ADE');
+
+  const estudiante2 = await prisma.usuario.upsert({
+    where: { correo: 'estudiante2@ucp.edu.co' },
+    update: { contrasena_hash: defaultHash },
+    create: {
+      primer_nombre:   'Juan',
+      primer_apellido: 'Pérez',
+      correo:          'estudiante2@ucp.edu.co',
+      contrasena_hash: defaultHash,
+      numero_documento: '12345678',
+      tipo_documento:   TipoDocumento.CC,
+      rol:              Rol.ESTUDIANTE,
+      id_programa:      idProgADE,
+      telefono:         '3186589765',
+    },
+  });
+
+  // Perfil de estudiante 2 — sin actividad ni horas
+  await prisma.perfilEstudiante.upsert({
+    where: { id_usuario: estudiante2.id },
+    update: {},
+    create: {
+      id_usuario:         estudiante2.id,
+      codigo_estudiantil: '2024ADE002',
+      semestre_actual:    3,
+      horas_previas:      0,
+      horas_acumuladas:   0,
+      porcentaje_avance:  0,
+      habilidades:        ['Análisis financiero', 'Trabajo en equipo', 'Liderazgo'],
+      intereses:          ['Emprendimiento', 'Desarrollo económico', 'Finanzas'],
+      modalidad_preferida: Modalidad.VIRTUAL,
+    },
+  });
+  console.log(`  ✅ [ESTUDIANTE] ${estudiante2.correo}  (sin inscripciones)`);
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 5. CONVOCATORIAS (5 en total con distintos publicadores)
+  // ───────────────────────────────────────────────────────────────────────────
   console.log('\n📢 Creando convocatorias...');
 
-  const catMap = Object.fromEntries(
-    (await prisma.categoriaServicioSocial.findMany()).map((c) => [c.nombre, c.id]),
-  );
-  const progMap = Object.fromEntries(
-    (await prisma.programa.findMany()).map((p) => [p.codigo ?? '', p.id]),
-  );
+  /**
+   * Cada convocatoria define:
+   *   - horas_totales_ofrecidas: suma de horas de sus 2 actividades
+   *   - Las actividades de la convocatoria objetivo del estudiante1 suman
+   *     exactamente las horas requeridas por su programa (PSI = 120 h).
+   *     Para lograrlo sin datos inverosímiles, se distribuyen entre las
+   *     actividades 60 h + 60 h = 120 h en la convocatoria principal.
+   *
+   * Las otras convocatorias tienen magnitudes coherentes con sus actividades.
+   */
 
-  const hoy = new Date();
-  const en30dias = new Date(hoy);
-  en30dias.setDate(hoy.getDate() + 30);
-  const en90dias = new Date(hoy);
-  en90dias.setDate(hoy.getDate() + 90);
+  const idProgARQ = await getProgId('ARQ');
+  const idProgCSP = await getProgId('CSP');
 
-  const convocatorias = [
+  type ConvocatoriaInput = {
+    titulo: string;
+    descripcion: string;
+    objetivo: string;
+    id_categoria: string;
+    publicado_por: string;
+    id_programa: string;
+    modalidad: Modalidad;
+    lugar: string;
+    competencias_requeridas: string[];
+    estado: EstadoConvocatoria;
+    fecha_inicio: Date;
+    fecha_fin: Date;
+    fecha_cierre_postulacion: Date;
+    cupo_maximo: number;
+    cupo_disponible: number;
+    horas_totales_ofrecidas: number;
+    requiere_entrevista: boolean;
+  };
+
+  const hoy     = new Date();
+  const en30d   = new Date(hoy); en30d.setDate(hoy.getDate() + 30);
+  const en90d   = new Date(hoy); en90d.setDate(hoy.getDate() + 90);
+  const hace60d = new Date(hoy); hace60d.setDate(hoy.getDate() - 60);
+  const hace30d = new Date(hoy); hace30d.setDate(hoy.getDate() - 30);
+
+  const convocatoriasData: ConvocatoriaInput[] = [
+    // ── C1: publicada por el ADMINISTRADOR — convocatoria principal de Estudiante 1
     {
-      titulo: 'Tutorías de Matemáticas para Colegios Públicos',
-      descripcion: 'Acompañamiento académico para estudiantes de secundaria en matemáticas básicas y avanzadas.',
-      objetivo: 'Reducir brechas educativas con tutoría universitaria personalizada.',
-      id_categoria: catMap['Educación y Pedagogía'],
-      id_programa: progMap['IST'],
-      modalidad: Modalidad.PRESENCIAL,
-      lugar: 'Institución Educativa San José - Pereira',
-      competencias_requeridas: ['Paciencia pedagógica', 'Comunicación efectiva', 'Conocimientos matemáticos'],
-      estado: EstadoConvocatoria.PUBLICADA,
-      fecha_inicio: hoy,
-      fecha_fin: en90dias,
-      fecha_cierre_postulacion: en30dias,
-      cupo_maximo: 15,
-      cupo_disponible: 15,
-      horas_totales_ofrecidas: 80,
-      requiere_entrevista: false,
-    },
-    {
-      titulo: 'Alfabetización Digital para Adultos Mayores',
-      descripcion: 'Enseñar habilidades digitales básicas a personas mayores de 60 años.',
-      objetivo: 'Incluir digitalmente a la población adulta mayor en la era tecnológica.',
-      id_categoria: catMap['Tecnología e Innovación Social'],
-      id_programa: progMap['TDS'],
-      modalidad: Modalidad.PRESENCIAL,
-      lugar: 'Centro Comunal Las Américas - Pereira',
-      competencias_requeridas: ['Paciencia', 'Conocimientos básicos de tecnología', 'Empatía'],
-      estado: EstadoConvocatoria.PUBLICADA,
-      fecha_inicio: hoy,
-      fecha_fin: en90dias,
-      fecha_cierre_postulacion: en30dias,
-      cupo_maximo: 20,
-      cupo_disponible: 20,
-      horas_totales_ofrecidas: 60,
-      requiere_entrevista: false,
-    },
-    {
-      titulo: 'Acompañamiento Psicológico Comunitario',
-      descripcion: 'Brindar apoyo emocional y orientación psicológica a comunidades vulnerables.',
-      objetivo: 'Mejorar la salud mental y bienestar emocional de la población.',
-      id_categoria: catMap['Bienestar Psicosocial'],
-      id_programa: progMap['PSI'],
-      modalidad: Modalidad.HIBRIDA,
-      lugar: 'Centro de Salud Mental La Esperanza - Pereira',
+      titulo:                  'Acompañamiento Psicológico Comunitario',
+      descripcion:             'Brindar apoyo emocional y orientación psicológica a comunidades vulnerables del eje cafetero.',
+      objetivo:                'Mejorar la salud mental y bienestar emocional de la población mediante atención directa.',
+      id_categoria:            catMap['Bienestar Psicosocial'],
+      publicado_por:           admin.id,
+      id_programa:             idProgPSI,
+      modalidad:               Modalidad.HIBRIDA,
+      lugar:                   'Centro de Salud Mental La Esperanza – Pereira',
       competencias_requeridas: ['Empatía', 'Escucha activa', 'Conocimientos psicológicos básicos'],
-      estado: EstadoConvocatoria.PUBLICADA,
-      fecha_inicio: hoy,
-      fecha_fin: en90dias,
-      fecha_cierre_postulacion: en30dias,
-      cupo_maximo: 12,
-      cupo_disponible: 12,
-      horas_totales_ofrecidas: 100,
-      requiere_entrevista: true,
+      estado:                  EstadoConvocatoria.CERRADA,
+      fecha_inicio:            hace60d,
+      fecha_fin:               hace30d,
+      fecha_cierre_postulacion: new Date(hace60d.getTime() - 7 * 86_400_000),
+      cupo_maximo:             10,
+      cupo_disponible:         0,
+      horas_totales_ofrecidas: 120, // 60 + 60 h (cubre requisito PSI)
+      requiere_entrevista:     true,
     },
+
+    // ── C2: publicada por el PROFESOR
     {
-      titulo: 'Asesoría a Pequeños Emprendedores',
-      descripcion: 'Apoyar a pequeños negocios locales con planes de negocio y gestión.',
-      objetivo: 'Fortalecer la economía local a través del emprendimiento.',
-      id_categoria: catMap['Desarrollo Empresarial y Económico'],
-      id_programa: progMap['ADE'],
-      modalidad: Modalidad.VIRTUAL,
-      lugar: 'Plataforma Virtual UCP',
+      titulo:                  'Tutorías de Programación para Colegios',
+      descripcion:             'Enseñar fundamentos de programación a estudiantes de secundaria en colegios públicos de Pereira.',
+      objetivo:                'Reducir la brecha digital en jóvenes de educación básica con acompañamiento universitario.',
+      id_categoria:            catMap['Educación y Pedagogía'],
+      publicado_por:           profesor.id,
+      id_programa:             idProgIST,
+      modalidad:               Modalidad.PRESENCIAL,
+      lugar:                   'Institución Educativa Técnica – Pereira',
+      competencias_requeridas: ['Programación básica', 'Paciencia pedagógica', 'Comunicación clara'],
+      estado:                  EstadoConvocatoria.PUBLICADA,
+      fecha_inicio:            hoy,
+      fecha_fin:               en90d,
+      fecha_cierre_postulacion: en30d,
+      cupo_maximo:             15,
+      cupo_disponible:         15,
+      horas_totales_ofrecidas: 80, // 40 + 40 h
+      requiere_entrevista:     false,
+    },
+
+    // ── C3: publicada por el ALIADO
+    {
+      titulo:                  'Alfabetización Digital para Adultos Mayores',
+      descripcion:             'Enseñar habilidades digitales básicas a personas mayores de 60 años en centros comunales.',
+      objetivo:                'Incluir digitalmente a la población adulta mayor de la ciudad.',
+      id_categoria:            catMap['Tecnología e Innovación Social'],
+      publicado_por:           aliado.id,
+      id_programa:             idProgCSP,
+      modalidad:               Modalidad.PRESENCIAL,
+      lugar:                   'Centro Comunal Las Américas – Pereira',
+      competencias_requeridas: ['Paciencia', 'Didáctica', 'Conocimientos básicos de tecnología'],
+      estado:                  EstadoConvocatoria.PUBLICADA,
+      fecha_inicio:            hoy,
+      fecha_fin:               en90d,
+      fecha_cierre_postulacion: en30d,
+      cupo_maximo:             20,
+      cupo_disponible:         20,
+      horas_totales_ofrecidas: 60, // 30 + 30 h
+      requiere_entrevista:     false,
+    },
+
+    // ── C4: publicada por el ADMINISTRADOR
+    {
+      titulo:                  'Asesoría a Pequeños Emprendedores',
+      descripcion:             'Apoyar a pequeños negocios locales con elaboración de planes de negocio y gestión financiera básica.',
+      objetivo:                'Fortalecer la economía local a través del emprendimiento con acompañamiento universitario.',
+      id_categoria:            catMap['Desarrollo Empresarial y Económico'],
+      publicado_por:           admin.id,
+      id_programa:             idProgADE,
+      modalidad:               Modalidad.VIRTUAL,
+      lugar:                   'Plataforma Virtual UCP',
       competencias_requeridas: ['Conocimientos empresariales', 'Análisis financiero', 'Planeación estratégica'],
-      estado: EstadoConvocatoria.PUBLICADA,
-      fecha_inicio: hoy,
-      fecha_fin: en90dias,
-      fecha_cierre_postulacion: en30dias,
-      cupo_maximo: 25,
-      cupo_disponible: 25,
-      horas_totales_ofrecidas: 120,
-      requiere_entrevista: true,
+      estado:                  EstadoConvocatoria.PUBLICADA,
+      fecha_inicio:            hoy,
+      fecha_fin:               en90d,
+      fecha_cierre_postulacion: en30d,
+      cupo_maximo:             25,
+      cupo_disponible:         25,
+      horas_totales_ofrecidas: 90, // 50 + 40 h
+      requiere_entrevista:     true,
+    },
+
+    // ── C5: publicada por el PROFESOR (segunda convocatoria)
+    {
+      titulo:                  'Rehabilitación de Espacios Comunitarios',
+      descripcion:             'Diseño y mejora de espacios públicos en comunidades vulnerables de Pereira con enfoque participativo.',
+      objetivo:                'Dignificar entornos comunitarios mediante el diseño arquitectónico y la participación ciudadana.',
+      id_categoria:            catMap['Educación y Pedagogía'],
+      publicado_por:           profesor.id,
+      id_programa:             idProgARQ,
+      modalidad:               Modalidad.PRESENCIAL,
+      lugar:                   'Barrio El Jardín – Pereira',
+      competencias_requeridas: ['Diseño arquitectónico', 'Trabajo comunitario', 'Planimetría básica'],
+      estado:                  EstadoConvocatoria.PUBLICADA,
+      fecha_inicio:            hoy,
+      fecha_fin:               en90d,
+      fecha_cierre_postulacion: en30d,
+      cupo_maximo:             12,
+      cupo_disponible:         12,
+      horas_totales_ofrecidas: 100, // 60 + 40 h
+      requiere_entrevista:     false,
     },
   ];
 
-  for (const conv of convocatorias) {
+  for (const conv of convocatoriasData) {
     const existente = await prisma.convocatoria.findFirst({ where: { titulo: conv.titulo } });
     if (!existente) {
       await prisma.convocatoria.create({
-        data: { ...conv, publicado_por: admin.id, publicado_en: new Date() },
+        data: { ...conv, publicado_en: new Date() },
       });
       console.log(`  ✅ ${conv.titulo}`);
     } else {
@@ -402,591 +530,485 @@ async function main() {
     }
   }
 
-  // ─────────────────────────────────────────────
-  // 6) ACTIVIDADES
-  // ─────────────────────────────────────────────
-  console.log('\n📋 Creando actividades...');
+  // ───────────────────────────────────────────────────────────────────────────
+  // 6. ACTIVIDADES (exactamente 2 por convocatoria)
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n📋 Creando actividades (2 por convocatoria)...');
+
+  /**
+   * Mapa de actividades indexado por título de convocatoria.
+   * Las horas de cada par deben sumar horas_totales_ofrecidas de la convocatoria.
+   *
+   * C1 — Acompañamiento Psicológico Comunitario  → 60 + 60 = 120 h
+   * C2 — Tutorías de Programación                → 40 + 40 =  80 h
+   * C3 — Alfabetización Digital                  → 30 + 30 =  60 h
+   * C4 — Asesoría a Emprendedores                → 50 + 40 =  90 h
+   * C5 — Rehabilitación de Espacios              → 60 + 40 = 100 h
+   */
+  const actividadesPorConvocatoria: Record<
+    string,
+    Array<{
+      nombre: string;
+      descripcion: string;
+      tipo_actividad: TipoActividad;
+      horas_estimadas: number;
+      materiales_requeridos: string[];
+    }>
+  > = {
+    'Acompañamiento Psicológico Comunitario': [
+      {
+        nombre:               'Sesiones de Escucha Terapéutica Individual',
+        descripcion:          'Atención psicológica individual a miembros de la comunidad en situación de vulnerabilidad.',
+        tipo_actividad:       TipoActividad.GENERAL,
+        horas_estimadas:      60,
+        materiales_requeridos: ['Fichas técnicas', 'Espacio privado', 'Material de relajación'],
+      },
+      {
+        nombre:               'Talleres Grupales de Bienestar Emocional',
+        descripcion:          'Actividades grupales de manejo emocional, técnicas de relajación y construcción de redes de apoyo.',
+        tipo_actividad:       TipoActividad.COMUNITARIA,
+        horas_estimadas:      60,
+        materiales_requeridos: ['Material lúdico', 'Guías de trabajo', 'Espacio amplio', 'Colchonetas'],
+      },
+    ],
+
+    'Tutorías de Programación para Colegios': [
+      {
+        nombre:               'Clases de Lógica y Pensamiento Computacional',
+        descripcion:          'Fundamentos de algoritmos, diagramas de flujo y pseudocódigo.',
+        tipo_actividad:       TipoActividad.CAPACITACION,
+        horas_estimadas:      40,
+        materiales_requeridos: ['Computadoras', 'Guías de ejercicios', 'Proyector'],
+      },
+      {
+        nombre:               'Prácticas de Codificación en Python',
+        descripcion:          'Ejercicios prácticos de programación en Python con proyectos de aplicación real.',
+        tipo_actividad:       TipoActividad.CAPACITACION,
+        horas_estimadas:      40,
+        materiales_requeridos: ['IDEs instalados', 'Ejemplos de código', 'Cuadernos de trabajo'],
+      },
+    ],
+
+    'Alfabetización Digital para Adultos Mayores': [
+      {
+        nombre:               'Uso Básico del Celular e Internet',
+        descripcion:          'Funciones esenciales del smartphone, navegación segura en internet y búsqueda de información.',
+        tipo_actividad:       TipoActividad.CAPACITACION,
+        horas_estimadas:      30,
+        materiales_requeridos: ['Celulares de práctica', 'Guías visuales', 'Computadoras'],
+      },
+      {
+        nombre:               'Aplicaciones de Comunicación y Servicios Digitales',
+        descripcion:          'Uso de WhatsApp, videollamadas, correo electrónico y servicios gubernamentales en línea.',
+        tipo_actividad:       TipoActividad.CAPACITACION,
+        horas_estimadas:      30,
+        materiales_requeridos: ['Tablets', 'Apps instaladas', 'Manual de usuario impreso'],
+      },
+    ],
+
+    'Asesoría a Pequeños Emprendedores': [
+      {
+        nombre:               'Diagnóstico Empresarial y Plan de Negocio',
+        descripcion:          'Análisis FODA, modelo Canvas y elaboración de plan estratégico con proyecciones financieras.',
+        tipo_actividad:       TipoActividad.ADMINISTRATIVA,
+        horas_estimadas:      50,
+        materiales_requeridos: ['Plantillas Canvas y FODA', 'Software de planificación', 'Computadoras'],
+      },
+      {
+        nombre:               'Gestión Financiera y Control de Costos',
+        descripcion:          'Control de costos, fijación de precios, flujo de caja y fundamentos de contabilidad básica.',
+        tipo_actividad:       TipoActividad.ADMINISTRATIVA,
+        horas_estimadas:      40,
+        materiales_requeridos: ['Calculadoras', 'Formatos contables', 'Plantillas de flujo de caja'],
+      },
+    ],
+
+    'Rehabilitación de Espacios Comunitarios': [
+      {
+        nombre:               'Diagnóstico Participativo y Levantamiento Arquitectónico',
+        descripcion:          'Talleres comunitarios de identificación de necesidades, diagnóstico espacial y planimetría básica.',
+        tipo_actividad:       TipoActividad.CAMPO,
+        horas_estimadas:      60,
+        materiales_requeridos: ['Cintas métricas', 'Planos base', 'Fichas de diagnóstico', 'Cámara fotográfica'],
+      },
+      {
+        nombre:               'Diseño y Ejecución de Intervenciones',
+        descripcion:          'Elaboración de propuestas de diseño, presentación a la comunidad e implementación de mejoras.',
+        tipo_actividad:       TipoActividad.COMUNITARIA,
+        horas_estimadas:      40,
+        materiales_requeridos: ['Software de diseño', 'Materiales de construcción básicos', 'Herramientas manuales'],
+      },
+    ],
+  };
+
+  // Limpiar actividades previas para evitar duplicados en re-ejecuciones
   await prisma.actividad.deleteMany({});
 
-  const actividadesPorConvocatoria = [
-    {
-      titulo: 'Tutorías de Matemáticas para Colegios Públicos',
-      actividades: [
-        {
-          nombre: 'Sesiones de Tutoría Individual',
-          descripcion: 'Acompañamiento uno a uno en matemáticas básicas',
-          tipo_actividad: TipoActividad.CAPACITACION,
-          horas_estimadas: 2,
-          materiales_requeridos: ['Guías matemáticas', 'Calculadora', 'Cuadernos'],
-        },
-        {
-          nombre: 'Talleres de Resolución de Problemas',
-          descripcion: 'Ejercicios prácticos en grupo para fortalecer habilidades',
-          tipo_actividad: TipoActividad.CAPACITACION,
-          horas_estimadas: 3,
-          materiales_requeridos: ['Pizarras', 'Marcadores', 'Problemas impresos'],
-        },
-        {
-          nombre: 'Evaluaciones y Seguimiento',
-          descripcion: 'Evaluación del progreso y ajuste de metodologías',
-          tipo_actividad: TipoActividad.ADMINISTRATIVA,
-          horas_estimadas: 1,
-          materiales_requeridos: ['Formularios', 'Instrumentos de evaluación'],
-        },
-      ],
-    },
-    {
-      titulo: 'Alfabetización Digital para Adultos Mayores',
-      actividades: [
-        {
-          nombre: 'Uso Básico del Celular',
-          descripcion: 'Funciones esenciales del smartphone y aplicaciones',
-          tipo_actividad: TipoActividad.CAPACITACION,
-          horas_estimadas: 2,
-          materiales_requeridos: ['Celulares de muestra', 'Guías visuales'],
-        },
-        {
-          nombre: 'Navegación Segura en Internet',
-          descripcion: 'Uso responsable de redes sociales y búsqueda de información',
-          tipo_actividad: TipoActividad.CAPACITACION,
-          horas_estimadas: 2,
-          materiales_requeridos: ['Computadoras', 'Guías de seguridad'],
-        },
-        {
-          nombre: 'Apps de Comunicación',
-          descripcion: 'WhatsApp, mensajería y videollamadas para mantener contacto',
-          tipo_actividad: TipoActividad.CAPACITACION,
-          horas_estimadas: 1,
-          materiales_requeridos: ['Tablets', 'Apps instaladas'],
-        },
-      ],
-    },
-    {
-      titulo: 'Acompañamiento Psicológico Comunitario',
-      actividades: [
-        {
-          nombre: 'Escucha Activa y Apoyo Emocional',
-          descripcion: 'Sesiones de acompañamiento psicológico individual',
-          tipo_actividad: TipoActividad.GENERAL,
-          horas_estimadas: 2,
-          materiales_requeridos: ['Fichas técnicas', 'Espacio privado'],
-        },
-        {
-          nombre: 'Talleres de Manejo del Estrés',
-          descripcion: 'Técnicas de relajación y manejo de ansiedad',
-          tipo_actividad: TipoActividad.CAPACITACION,
-          horas_estimadas: 3,
-          materiales_requeridos: ['Colchonetas', 'Música relajante', 'Guías'],
-        },
-        {
-          nombre: 'Grupos de Apoyo Mutuo',
-          descripcion: 'Sesiones grupales para compartir experiencias',
-          tipo_actividad: TipoActividad.COMUNITARIA,
-          horas_estimadas: 2,
-          materiales_requeridos: ['Sillas en círculo', 'Material de escritura'],
-        },
-      ],
-    },
-    {
-      titulo: 'Asesoría a Pequeños Emprendedores',
-      actividades: [
-        {
-          nombre: 'Diagnóstico Empresarial',
-          descripcion: 'Análisis FODA y evaluación del modelo de negocio',
-          tipo_actividad: TipoActividad.ADMINISTRATIVA,
-          horas_estimadas: 4,
-          materiales_requeridos: ['Plantillas FODA', 'Computadoras'],
-        },
-        {
-          nombre: 'Plan de Negocio',
-          descripcion: 'Elaboración de plan estratégico y proyecciones',
-          tipo_actividad: TipoActividad.ADMINISTRATIVA,
-          horas_estimadas: 4,
-          materiales_requeridos: ['Software de planificación', 'Guías'],
-        },
-        {
-          nombre: 'Gestión Financiera Básica',
-          descripcion: 'Control de costos, precios y flujo de caja',
-          tipo_actividad: TipoActividad.ADMINISTRATIVA,
-          horas_estimadas: 3,
-          materiales_requeridos: ['Calculadoras', 'Formatos contables'],
-        },
-      ],
-    },
-  ];
-
   const todasConvocatorias = await prisma.convocatoria.findMany();
+
   for (const convocatoria of todasConvocatorias) {
-    const config = actividadesPorConvocatoria.find((a) => a.titulo === convocatoria.titulo);
-    if (!config) continue;
-    for (const actividad of config.actividades) {
+    const actividadesConfig = actividadesPorConvocatoria[convocatoria.titulo];
+    if (!actividadesConfig) {
+      console.log(`  ⚠️  Sin configuración de actividades para: ${convocatoria.titulo}`);
+      continue;
+    }
+
+    for (const act of actividadesConfig) {
       await prisma.actividad.create({
         data: {
-          ...actividad,
+          ...act,
           id_convocatoria: convocatoria.id,
-          creado_por: admin.id,
-          fecha_inicio: convocatoria.fecha_inicio,
-          fecha_limite: convocatoria.fecha_fin,
-          esta_activa: true,
+          creado_por:      convocatoria.publicado_por,
+          fecha_inicio:    convocatoria.fecha_inicio,
+          fecha_limite:    convocatoria.fecha_fin ?? undefined,
+          esta_activa:     true,
         },
       });
     }
-    console.log(`  ✅ ${config.actividades.length} actividades → ${convocatoria.titulo}`);
-  }
 
-  // ─────────────────────────────────────────────
-  // 7) USUARIOS (estudiantes · profesores · aliados)
-  // ─────────────────────────────────────────────
-  console.log('\n👥 Creando usuarios del sistema...');
-  const defaultPassword = 'Ucpservicio123';
-  const defaultHashedPassword = await bcrypt.hash(defaultPassword, 10);
-
-
-  // ── 7a. Estudiantes ───────────────────────────
-  /**
-   * Se asigna id_programa usando el código del programa,
-   * que es único y predecible, en lugar de índices de array.
-   */
-  const estudiantesData = [
-    {
-      primer_nombre: 'Juan',
-      primer_apellido: 'Pérez',
-      correo: 'juan.perez@ucp.edu.co',
-      numero_documento: '12345678',
-      telefono: '3186589765',
-      codigoPrograma: 'IST', // Ingeniería de Sistemas – FCBI
-      perfil: {
-        codigo_estudiantil: '2024IST001',
-        semestre_actual: 6,
-        horas_acumuladas: 70,
-        habilidades: ['Pensamiento lógico', 'Trabajo en equipo', 'Programación básica'],
-        intereses: ['Tecnología', 'Educación STEM', 'Voluntariado'],
-        modalidad_preferida: Modalidad.PRESENCIAL,
-      },
-    },
-    {
-      primer_nombre: 'María',
-      primer_apellido: 'García',
-      correo: 'maria.garcia@ucp.edu.co',
-      numero_documento: '87654321',
-      telefono: '3152345678',
-      codigoPrograma: 'PSI', // Psicología – FCHSE
-      perfil: {
-        codigo_estudiantil: '2024PSI002',
-        semestre_actual: 4,
-        horas_acumuladas: 45,
-        habilidades: ['Empatía', 'Escucha activa', 'Comunicación asertiva'],
-        intereses: ['Salud mental', 'Comunidades vulnerables', 'Inclusión social'],
-        modalidad_preferida: Modalidad.PRESENCIAL,
-      },
-    },
-  ];
-
-  console.log('\n🎓 Creando estudiantes...');
-  for (const est of estudiantesData) {
-    const id_programa = await getProgId(est.codigoPrograma);
-    const programa = await prisma.programa.findUnique({ where: { id: id_programa } });
-
-    const usuario = await prisma.usuario.upsert({
-      where: { correo: est.correo },
-      update: { contrasena_hash: defaultHashedPassword },
-      create: {
-        primer_nombre: est.primer_nombre,
-        primer_apellido: est.primer_apellido,
-        correo: est.correo,
-        contrasena_hash: defaultHashedPassword,
-        numero_documento: est.numero_documento,
-        tipo_documento: TipoDocumento.CC,
-        rol: Rol.ESTUDIANTE,
-        id_programa,
-        telefono: est.telefono,
-      },
-
-    });
-
-    await prisma.perfilEstudiante.upsert({
-      where: { id_usuario: usuario.id },
-      update: {},
-      create: {
-        id_usuario: usuario.id,
-        codigo_estudiantil: est.perfil.codigo_estudiantil,
-        semestre_actual: est.perfil.semestre_actual,
-        horas_previas: 0,
-        horas_acumuladas: est.perfil.horas_acumuladas,
-        porcentaje_avance: programa
-          ? Math.round((est.perfil.horas_acumuladas / Number(programa.horas_requeridas)) * 100)
-          : 0,
-        habilidades: est.perfil.habilidades,
-        intereses: est.perfil.intereses,
-        modalidad_preferida: est.perfil.modalidad_preferida,
-      },
-    });
-
+    const totalHoras = actividadesConfig.reduce((s, a) => s + a.horas_estimadas, 0);
     console.log(
-      `  ✅ Estudiante: ${usuario.primer_nombre} ${usuario.primer_apellido}` +
-      ` | Programa: ${programa?.nombre} [${est.codigoPrograma}]` +
-      ` | Semestre: ${est.perfil.semestre_actual}° | Horas: ${est.perfil.horas_acumuladas}`,
+      `  ✅ ${actividadesConfig.length} actividades (${totalHoras} h total) → "${convocatoria.titulo}"`,
     );
   }
 
-  // ── 7b. Profesores ────────────────────────────
-  /**
-   * Cada profesor tiene:
-   *  - codigoPrograma: el programa al que pertenece
-   *  - nombreFacultad:  referencia explícita para verificación visual en logs
-   *
-   * Un profesor de Ingeniería no puede quedar asignado a Psicología
-   * y viceversa.  Con códigos directos eso es imposible.
-   */
-  const profesoresData = [
-    {
-      primer_nombre: 'Carlos',
-      primer_apellido: 'Rodríguez',
-      correo: 'carlos.rodriguez@ucp.edu.co',
-      numero_documento: '11223344',
-      telefono: '3209876543',
-      codigoPrograma: 'IST',            // Ingeniería de Sistemas
-      nombreFacultad: 'Facultad de Ciencias Básicas e Ingeniería',
-    },
-    {
-      primer_nombre: 'Ana',
-      primer_apellido: 'Martínez',
-      correo: 'ana.martinez@ucp.edu.co',
-      numero_documento: '55443322',
-      telefono: '3123456789',
-      codigoPrograma: 'PSI',            // Psicología
-      nombreFacultad: 'Facultad de Ciencias Humanas, Sociales y de la Educación',
-    },
-    {
-      primer_nombre: 'Luis',
-      primer_apellido: 'Herrera',
-      correo: 'luis.herrera@ucp.edu.co',
-      numero_documento: '33445566',
-      telefono: '3015678901',
-      codigoPrograma: 'ADE',            // Administración de Empresas
-      nombreFacultad: 'Facultad de Ciencias Económicas y Administrativas',
-    },
-    {
-      primer_nombre: 'Claudia',
-      primer_apellido: 'Ospina',
-      correo: 'claudia.ospina@ucp.edu.co',
-      numero_documento: '44556677',
-      telefono: '3107654321',
-      codigoPrograma: 'ARQ',            // Arquitectura
-      nombreFacultad: 'Facultad de Arquitectura y Diseño',
-    },
-  ];
+  // ───────────────────────────────────────────────────────────────────────────
+  // 7. POSTULACIÓN — Estudiante 1 en C1 (flujo completo)
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n📝 Creando postulación de Estudiante 1...');
 
-  console.log('\n👨‍🏫 Creando profesores...');
-  for (const prof of profesoresData) {
-    const id_programa = await getProgId(prof.codigoPrograma);
-    const programa = await prisma.programa.findUnique({ where: { id: id_programa } });
-
-    const usuario = await prisma.usuario.upsert({
-      where: { correo: prof.correo },
-      update: { contrasena_hash: defaultHashedPassword },
-      create: {
-        primer_nombre: prof.primer_nombre,
-        primer_apellido: prof.primer_apellido,
-        correo: prof.correo,
-        contrasena_hash: defaultHashedPassword,
-        numero_documento: prof.numero_documento,
-        tipo_documento: TipoDocumento.CC,
-        rol: Rol.PROFESOR,
-        id_programa,
-        telefono: prof.telefono,
-      },
-
-    });
-
-    console.log(
-      `  ✅ Profesor: ${usuario.primer_nombre} ${usuario.primer_apellido}` +
-      ` | Programa: ${programa?.nombre} [${prof.codigoPrograma}]` +
-      ` | Facultad: ${prof.nombreFacultad}`,
-    );
-  }
-
-  // ── 7c. Aliados ───────────────────────────────
-  const aliadosData = [
-    {
-      primer_nombre: 'Fundación',
-      primer_apellido: 'Educación para Todos',
-      correo: 'contacto@educacionparatodos.org',
-      numero_documento: '900123456',
-      telefono: '3001234567',
-    },
-    {
-      primer_nombre: 'Centro',
-      primer_apellido: 'Desarrollo Comunitario',
-      correo: 'info@centrocomunitario.org',
-      numero_documento: '900789012',
-      telefono: '3007890123',
-    },
-  ];
-
-  console.log('\n🤝 Creando aliados...');
-  for (const aliado of aliadosData) {
-    const usuario = await prisma.usuario.upsert({
-      where: { correo: aliado.correo },
-      update: { contrasena_hash: defaultHashedPassword },
-      create: {
-        primer_nombre: aliado.primer_nombre,
-        primer_apellido: aliado.primer_apellido,
-        correo: aliado.correo,
-        contrasena_hash: defaultHashedPassword,
-        numero_documento: aliado.numero_documento,
-        tipo_documento: TipoDocumento.NIT,
-        rol: Rol.ALIADO,
-        telefono: aliado.telefono,
-      },
-
-    });
-    console.log(`  ✅ Aliado: ${usuario.primer_nombre} ${usuario.primer_apellido}`);
-  }
-
-  // ── 7d. Auxiliares ────────────────────────────
-  const auxiliaresData = [
-    {
-      primer_nombre: 'Andrea',
-      primer_apellido: 'Castro',
-      correo: 'andrea.auxiliar@ucp.edu.co',
-      numero_documento: '1098765432',
-      telefono: '3112223344',
-    },
-  ];
-
-  console.log('\n👨‍💼 Creando auxiliares...');
-  for (const auxiliar of auxiliaresData) {
-    const usuario = await prisma.usuario.upsert({
-      where: { correo: auxiliar.correo },
-      update: { contrasena_hash: defaultHashedPassword },
-      create: {
-        primer_nombre: auxiliar.primer_nombre,
-        primer_apellido: auxiliar.primer_apellido,
-        correo: auxiliar.correo,
-        contrasena_hash: defaultHashedPassword,
-        numero_documento: auxiliar.numero_documento,
-        tipo_documento: TipoDocumento.CC,
-        rol: Rol.AUXILIAR,
-        telefono: auxiliar.telefono,
-      },
-    });
-    console.log(`  ✅ Auxiliar: ${usuario.primer_nombre} ${usuario.primer_apellido}`);
-  }
-
-  // ─────────────────────────────────────────────
-  // 8) CERTIFICADOS
-  // ─────────────────────────────────────────────
-  console.log('\n📜 Creando certificados de ejemplo...');
-
-  const estudiantesCreados = await prisma.usuario.findMany({
-    where: { rol: Rol.ESTUDIANTE },
-    take: 2,
+  const convC1 = await prisma.convocatoria.findFirst({
+    where: { titulo: 'Acompañamiento Psicológico Comunitario' },
   });
-  const convocatoriasActuales = await prisma.convocatoria.findMany({ take: 4 });
 
-  const certificados = [
-    {
-      id_estudiante: estudiantesCreados[0]?.id,
-      id_convocatoria: convocatoriasActuales[0]?.id,
-      emitido_por: admin.id,
-      total_horas: 40,
-      periodo_desde: new Date('2024-01-01'),
-      periodo_hasta: new Date('2024-03-31'),
-      descripcion: 'Certificado por participación en tutorías de matemáticas.',
-      nombre_aliado: 'Fundación Educación para Todos',
-      nombre_convocatoria: convocatoriasActuales[0]?.titulo ?? 'Tutorías',
-      url_pdf: '/uploads/certificado_juan_perez_1.pdf',
-      emitido_en: new Date('2024-04-01T10:00:00Z'),
-    },
-    {
-      id_estudiante: estudiantesCreados[1]?.id,
-      id_convocatoria: convocatoriasActuales[1]?.id,
-      emitido_por: admin.id,
-      total_horas: 30,
-      periodo_desde: new Date('2023-10-01'),
-      periodo_hasta: new Date('2023-12-31'),
-      descripcion: 'Certificado por alfabetización digital.',
-      nombre_aliado: 'Centro Desarrollo Comunitario',
-      nombre_convocatoria: convocatoriasActuales[1]?.titulo ?? 'Alfabetización',
-      url_pdf: '/uploads/certificado_maria_garcia_2.pdf',
-      emitido_en: new Date('2024-01-15T14:30:00Z'),
-    },
+  if (!convC1) throw new Error('Convocatoria C1 no encontrada.');
+
+  const postulacionExistente = await prisma.postulacion.findFirst({
+    where: { id_estudiante: estudiante1.id, id_convocatoria: convC1.id },
+  });
+
+  let postulacion = postulacionExistente;
+
+  if (!postulacionExistente) {
+    postulacion = await prisma.postulacion.create({
+      data: {
+        id_estudiante:    estudiante1.id,
+        id_convocatoria:  convC1.id,
+        estado:           EstadoPostulacion.ACEPTADA,
+        motivacion:       'Quiero aplicar mis conocimientos de psicología para ayudar a comunidades vulnerables y fortalecer mi perfil profesional.',
+        habilidades_relevantes: ['Empatía', 'Escucha activa', 'Manejo de grupos', 'Primeros auxilios psicológicos'],
+        postulado_en:     new Date(hace60d.getTime() - 10 * 86_400_000),
+        revisado_en:      new Date(hace60d.getTime() - 8 * 86_400_000),
+        revisado_por:     admin.id,
+        notas_revision:   'Excelente candidata con gran vocación de servicio y sólidas competencias en el área.',
+      },
+    });
+    console.log(`  ✅ Postulación ACEPTADA: ${estudiante1.correo} → ${convC1.titulo}`);
+  } else {
+    console.log(`  ⏭️  Postulación ya existe: ${estudiante1.correo} → ${convC1.titulo}`);
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 8. REPORTES DE HORAS — Estudiante 1 (ambas actividades de C1)
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n⏱️  Creando reportes de horas de Estudiante 1...');
+
+  const actividadesC1 = await prisma.actividad.findMany({
+    where: { id_convocatoria: convC1.id },
+    orderBy: { creado_en: 'asc' },
+  });
+
+  if (actividadesC1.length !== 2) {
+    throw new Error(`Se esperaban 2 actividades en C1, se encontraron ${actividadesC1.length}.`);
+  }
+
+  let totalHorasAprobadas = 0;
+
+  // Fechas escalonadas dentro del periodo de la convocatoria cerrada
+  const fechasActividad = [
+    new Date(hace60d.getTime() + 7  * 86_400_000),  // ~1 semana después del inicio
+    new Date(hace60d.getTime() + 21 * 86_400_000),  // ~3 semanas después del inicio
   ];
 
-  for (const cert of certificados) {
-    if (!cert.id_estudiante || !cert.id_convocatoria) continue;
-    const existe = await prisma.certificado.findFirst({
-      where: { id_estudiante: cert.id_estudiante, id_convocatoria: cert.id_convocatoria },
+  for (let i = 0; i < actividadesC1.length; i++) {
+    const actividad      = actividadesC1[i];
+    const fechaActividad = fechasActividad[i];
+    const horasReportadas = Number(actividad.horas_estimadas);
+
+    const reporteExistente = await prisma.reporteHoras.findFirst({
+      where: { id_estudiante: estudiante1.id, id_actividad: actividad.id },
     });
-    if (!existe) {
-      await prisma.certificado.create({ data: cert });
-      console.log(`  ✅ Certificado: ${cert.nombre_convocatoria}`);
+
+    if (!reporteExistente) {
+      await prisma.reporteHoras.create({
+        data: {
+          id_estudiante:       estudiante1.id,
+          id_actividad:        actividad.id,
+          id_convocatoria:     convC1.id,
+          horas_reportadas:    horasReportadas,
+          horas_aprobadas:     horasReportadas,
+          estado:              EstadoReporte.APROBADO,
+          descripcion_trabajo: `Participación completa en "${actividad.nombre}". Se cumplieron todas las actividades planificadas y los objetivos de intervención comunitaria.`,
+          notas_estudiante:    'Experiencia muy enriquecedora. Se lograron los objetivos propuestos con la comunidad.',
+          fecha_actividad:     fechaActividad,
+          reportado_en:        new Date(fechaActividad.getTime() + 86_400_000),
+          revisado_en:         new Date(fechaActividad.getTime() + 3 * 86_400_000),
+          id_revisor:          admin.id,
+          notas_revisor:       'Trabajo excelente. Cumplió con todos los objetivos establecidos. Horas aprobadas en su totalidad.',
+        },
+      });
+      totalHorasAprobadas += horasReportadas;
+      console.log(`  ✅ Reporte APROBADO: "${actividad.nombre}" — ${horasReportadas} h`);
     } else {
-      console.log(`  ⏭️  Certificado existente: ${cert.nombre_convocatoria}`);
+      totalHorasAprobadas += Number(reporteExistente.horas_aprobadas ?? 0);
+      console.log(`  ⏭️  Reporte ya existe: "${actividad.nombre}"`);
     }
   }
 
-  // ─────────────────────────────────────────────
-  // 9) NOTICIAS
-  // ─────────────────────────────────────────────
-  console.log('\n📰 Seeding de noticias...');
+  // ───────────────────────────────────────────────────────────────────────────
+  // 9. ACTUALIZAR PERFIL DEL ESTUDIANTE 1 (horas y porcentaje de avance)
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n🔄 Actualizando perfil de Estudiante 1...');
 
-  const noticiasSeed: NoticiaSeed[] = [
+  const progPSI             = await prisma.programa.findUnique({ where: { codigo: 'PSI' } });
+  const horasRequeridas     = Number(progPSI?.horas_requeridas ?? 120);
+  const porcentajeAvance    = Math.min(
+    Math.round((totalHorasAprobadas / horasRequeridas) * 100),
+    100,
+  );
+
+  await prisma.perfilEstudiante.update({
+    where: { id_usuario: estudiante1.id },
+    data: {
+      horas_acumuladas:  totalHorasAprobadas,
+      porcentaje_avance: porcentajeAvance,
+    },
+  });
+
+  console.log(
+    `  ✅ Perfil actualizado: ${totalHorasAprobadas} h acumuladas` +
+    ` / ${horasRequeridas} h requeridas` +
+    ` → ${porcentajeAvance}% de avance`,
+  );
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 10. CERTIFICADO — Estudiante 1 (habilitado al 100 %)
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n📜 Emitiendo certificado de Estudiante 1...');
+
+  if (porcentajeAvance >= 100) {
+    const certExistente = await prisma.certificado.findFirst({
+      where: { id_estudiante: estudiante1.id, id_convocatoria: convC1.id },
+    });
+
+    if (!certExistente) {
+      await prisma.certificado.create({
+        data: {
+          id_estudiante:       estudiante1.id,
+          id_convocatoria:     convC1.id,
+          emitido_por:         admin.id,
+          total_horas:         totalHorasAprobadas,
+          periodo_desde:       convC1.fecha_inicio,
+          periodo_hasta:       convC1.fecha_fin ?? hace30d,
+          descripcion:         `Certificado de cumplimiento de ${totalHorasAprobadas} horas de servicio social en el programa de ${convC1.titulo}.`,
+          nombre_aliado:       'Dirección de Servicio Social UCP',
+          nombre_convocatoria: convC1.titulo,
+          url_pdf:             `/certificados/${slugify(convC1.titulo)}_${estudiante1.id}.pdf`,
+          emitido_en:          new Date(hace30d.getTime() + 2 * 86_400_000),
+          esta_vigente:        true,
+        },
+      });
+      console.log(`  ✅ Certificado emitido: ${totalHorasAprobadas} h — ${convC1.titulo}`);
+    } else {
+      console.log(`  ⏭️  Certificado ya existe para: ${estudiante1.correo}`);
+    }
+  } else {
+    console.log(
+      `  ⚠️  Certificado NO emitido: Estudiante 1 solo tiene ${porcentajeAvance}%` +
+      ' (requiere 100%).',
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // 11. NOTICIAS
+  // ───────────────────────────────────────────────────────────────────────────
+  console.log('\n📰 Creando noticias institucionales...');
+
+  const noticiasData = [
     {
-      titulo: 'Taller de Sensibilización Social 2025',
-      resumen: 'Metodologías de intervención social para maximizar impacto comunitario.',
+      titulo:            'Taller de Sensibilización Social 2025',
+      resumen:           'Metodologías de intervención social para maximizar el impacto comunitario de los estudiantes.',
       contenido:
-        'Taller para estudiantes que buscan profundizar en realidades sociales locales.\n' +
-        'Incluye diagnóstico participativo, comunicación intercultural y evaluación de impacto.',
-      autor: 'Dirección de Servicio Social',
-      publicada: true,
+        'Taller dirigido a estudiantes que buscan profundizar en las realidades sociales locales.\n' +
+        'Incluye módulos de diagnóstico participativo, comunicación intercultural y evaluación de impacto.',
+      autor:             'Dirección de Servicio Social',
+      publicada:         true,
       fecha_publicacion: new Date('2025-03-10'),
       imagenes: [
         {
-          url_imagen:
-            'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=60',
-          public_id_cloudinary: 'noticia_taller_sensibilizacion_1',
-          orden: 0,
+          url_imagen:            'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=60',
+          public_id_cloudinary:  'noticia_taller_sensibilizacion_1',
+          orden:                 0,
         },
       ],
     },
     {
-      titulo: "Programa 'UCP en tu Barrio'",
-      resumen: 'Inscripciones abiertas para alfabetización digital en sectores vulnerables.',
+      titulo:            "Programa 'UCP en tu Barrio'",
+      resumen:           'Inscripciones abiertas para alfabetización digital en sectores vulnerables de Pereira.',
       contenido:
-        'Convocatoria de voluntariado estudiantil para cierre de brecha digital.\n' +
-        'Incluye talleres prácticos y acompañamiento comunitario.',
-      autor: 'Coordinación de Proyectos Sociales',
-      publicada: true,
+        'Convocatoria de voluntariado estudiantil para cerrar la brecha digital en comunidades vulnerables.\n' +
+        'Incluye talleres prácticos semanales y acompañamiento comunitario continuo.',
+      autor:             'Coordinación de Proyectos Sociales',
+      publicada:         true,
       fecha_publicacion: new Date('2025-03-08'),
       imagenes: [
         {
-          url_imagen:
-            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60',
-          public_id_cloudinary: 'noticia_ucp_barrio_1',
-          orden: 0,
+          url_imagen:            'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=60',
+          public_id_cloudinary:  'noticia_ucp_barrio_1',
+          orden:                 0,
         },
       ],
     },
     {
-      titulo: 'Gala de Premios Excelencia Social',
-      resumen: 'Evento de reconocimiento al compromiso estudiantil en servicio social.',
+      titulo:            'Gala de Premios a la Excelencia en Servicio Social',
+      resumen:           'Reconocimiento al compromiso y liderazgo estudiantil en proyectos de impacto social.',
       contenido:
-        'Ceremonia para destacar proyectos de impacto, liderazgo y compromiso social\n' +
-        'de estudiantes UCP durante el semestre.',
-      autor: 'Comité de Servicio Social',
-      publicada: true,
+        'Ceremonia anual de premiación para destacar proyectos de impacto comunitario, liderazgo y compromiso social\n' +
+        'de los estudiantes UCP durante el semestre. Se entregarán reconocimientos a las mejores iniciativas.',
+      autor:             'Comité de Servicio Social UCP',
+      publicada:         true,
       fecha_publicacion: new Date('2025-03-05'),
       imagenes: [
         {
-          url_imagen:
-            'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&auto=format&fit=crop&q=60',
-          public_id_cloudinary: 'noticia_gala_premios_1',
-          orden: 0,
+          url_imagen:            'https://images.unsplash.com/photo-1543269865-cbf427effbad?w=800&auto=format&fit=crop&q=60',
+          public_id_cloudinary:  'noticia_gala_premios_1',
+          orden:                 0,
         },
       ],
     },
   ];
 
-  for (const noticiaData of noticiasSeed) {
+  for (const noticiaData of noticiasData) {
     const slug = slugify(noticiaData.titulo);
     const { imagenes, ...noticiaInfo } = noticiaData;
 
     const noticia = await prisma.noticia.upsert({
       where: { slug },
       update: {
-        titulo: noticiaInfo.titulo,
-        resumen: noticiaInfo.resumen,
-        contenido: noticiaInfo.contenido,
-        autor: noticiaInfo.autor,
-        publicada: noticiaInfo.publicada,
+        titulo:            noticiaInfo.titulo,
+        resumen:           noticiaInfo.resumen,
+        contenido:         noticiaInfo.contenido,
+        autor:             noticiaInfo.autor,
+        publicada:         noticiaInfo.publicada,
         fecha_publicacion: noticiaInfo.fecha_publicacion,
       },
       create: {
-        titulo: noticiaInfo.titulo,
+        titulo:            noticiaInfo.titulo,
         slug,
-        resumen: noticiaInfo.resumen,
-        contenido: noticiaInfo.contenido,
-        autor: noticiaInfo.autor,
-        publicada: noticiaInfo.publicada,
+        resumen:           noticiaInfo.resumen,
+        contenido:         noticiaInfo.contenido,
+        autor:             noticiaInfo.autor,
+        publicada:         noticiaInfo.publicada,
         fecha_publicacion: noticiaInfo.fecha_publicacion,
       },
     });
 
     await prisma.imagenNoticia.deleteMany({ where: { id_noticia: noticia.id } });
+
     if (imagenes.length > 0) {
       await prisma.imagenNoticia.createMany({
         data: imagenes.map((img) => ({
-          id_noticia: noticia.id,
-          url_imagen: img.url_imagen,
+          id_noticia:           noticia.id,
+          url_imagen:           img.url_imagen,
           public_id_cloudinary: img.public_id_cloudinary,
-          orden: img.orden,
+          orden:                img.orden,
         })),
       });
     }
-    console.log(`  ✅ Noticia: ${noticia.titulo}`);
+
+    console.log(`  ✅ ${noticia.titulo}`);
   }
 
-  // ─────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
   // RESUMEN FINAL
-  // ─────────────────────────────────────────────
+  // ───────────────────────────────────────────────────────────────────────────
   const [
     cntFac,
     cntProg,
     cntCat,
     cntConv,
     cntAct,
+    cntPost,
+    cntReportes,
     cntCert,
     cntNoticias,
-    cntImagenesNoticias,
     cntUsuarios,
     cntEstudiantes,
     cntProfesores,
     cntAliados,
     cntAuxiliares,
+    cntAdmins,
   ] = await Promise.all([
     prisma.facultad.count(),
     prisma.programa.count(),
     prisma.categoriaServicioSocial.count(),
     prisma.convocatoria.count(),
     prisma.actividad.count(),
+    prisma.postulacion.count(),
+    prisma.reporteHoras.count(),
     prisma.certificado.count(),
     prisma.noticia.count(),
-    prisma.imagenNoticia.count(),
     prisma.usuario.count(),
     prisma.usuario.count({ where: { rol: Rol.ESTUDIANTE } }),
     prisma.usuario.count({ where: { rol: Rol.PROFESOR } }),
     prisma.usuario.count({ where: { rol: Rol.ALIADO } }),
     prisma.usuario.count({ where: { rol: Rol.AUXILIAR } }),
+    prisma.usuario.count({ where: { rol: Rol.ADMINISTRADOR } }),
   ]);
 
-  console.log('\n═══════════════════════════════════════════════════');
-  console.log('✨ Seeding principal finalizado.');
-  console.log('───────────────────────────────────────────────────');
-  console.log(`🏛️  Facultades:            ${cntFac}`);
-  console.log(`🎓 Programas:             ${cntProg}`);
-  console.log(`📁 Categorías:            ${cntCat}`);
-  console.log(`📢 Convocatorias:         ${cntConv}`);
-  console.log(`📋 Actividades:           ${cntAct}`);
-  console.log(`📜 Certificados:          ${cntCert}`);
-  console.log(`📰 Noticias:              ${cntNoticias}`);
-  console.log(`🖼️  Imágenes de noticias:  ${cntImagenesNoticias}`);
-  console.log(`👥 Usuarios totales:      ${cntUsuarios}`);
-  console.log(`🎓 Estudiantes:           ${cntEstudiantes}`);
-  console.log(`👨‍🏫 Profesores:            ${cntProfesores}`);
-  console.log(`🤝 Aliados:               ${cntAliados}`);
-  console.log(`👨‍💼 Auxiliares:            ${cntAuxiliares}`);
-  console.log('👨‍💼 Administrador:         1');
-  console.log('═══════════════════════════════════════════════════\n');
+  console.log('\n═══════════════════════════════════════════════════════');
+  console.log('✨  Seeding UCP finalizado con éxito.');
+  console.log('───────────────────────────────────────────────────────');
+  console.log(`🏛️   Facultades:             ${cntFac}`);
+  console.log(`🎓  Programas:              ${cntProg}`);
+  console.log(`📁  Categorías:             ${cntCat}`);
+  console.log(`📢  Convocatorias:          ${cntConv}`);
+  console.log(`📋  Actividades:            ${cntAct}`);
+  console.log(`📝  Postulaciones:          ${cntPost}`);
+  console.log(`⏱️   Reportes de horas:      ${cntReportes}`);
+  console.log(`📜  Certificados:           ${cntCert}`);
+  console.log(`📰  Noticias:               ${cntNoticias}`);
+  console.log('───────────────────────────────────────────────────────');
+  console.log(`👥  Usuarios totales:       ${cntUsuarios}`);
+  console.log(`👨‍💼  Administradores:        ${cntAdmins}   administrador@ucp.edu.co`);
+  console.log(`👨‍🏫  Profesores:             ${cntProfesores}   profesor@ucp.edu.co`);
+  console.log(`👨‍💼  Auxiliares:             ${cntAuxiliares}   auxiliar@ucp.edu.co`);
+  console.log(`🤝  Aliados:                ${cntAliados}   aliado@ucp.edu.co`);
+  console.log(`🎓  Estudiantes:            ${cntEstudiantes}   estudiante1@ucp.edu.co / estudiante2@ucp.edu.co`);
+  console.log('───────────────────────────────────────────────────────');
+  console.log('🔑  Contraseña por defecto (todos excepto admin): Ucpservicio123');
+  console.log('🔑  Contraseña administrador:                     Android.13');
+  console.log('───────────────────────────────────────────────────────');
+  console.log('📊  Flujo Estudiante 1 (estudiante1@ucp.edu.co):');
+  console.log(`     Convocatoria:    ${convC1.titulo}`);
+  console.log(`     Horas aprobadas: ${totalHorasAprobadas} / ${horasRequeridas}`);
+  console.log(`     Avance:          ${porcentajeAvance}%`);
+  console.log(`     Certificado:     ${porcentajeAvance >= 100 ? '✅ Emitido' : '⏳ Pendiente'}`);
+  console.log('📊  Flujo Estudiante 2 (estudiante2@ucp.edu.co):');
+  console.log('     Sin inscripciones ni actividades — solo usuario en sistema.');
+  console.log('═══════════════════════════════════════════════════════\n');
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOOTSTRAP
+// ─────────────────────────────────────────────────────────────────────────────
 
 main()
   .then(async () => {
     await prisma.$disconnect();
   })
   .catch(async (e) => {
-    console.error('\n❌ Error durante seeding:', e);
+    console.error('\n❌ Error durante el seeding:', e);
     await prisma.$disconnect();
     process.exit(1);
   });

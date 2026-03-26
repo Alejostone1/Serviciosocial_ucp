@@ -31,7 +31,7 @@ export default async function EstudianteDashboardPage() {
                 description="Aquí está el resumen de tu progreso en el servicio social."
             >
                 <Link
-                    href="/estudiante/mis-horas/reportar"
+                    href="/sistema/estudiante/mis-horas/reportar"
                     className="flex items-center gap-2 px-4 py-2 bg-[#8B1E1E] text-white rounded-xl font-semibold hover:bg-[#731919] transition-colors shadow-sm focus:ring-2 focus:ring-offset-2 focus:ring-[#8B1E1E]"
                 >
                     <Clock className="w-4 h-4" />
@@ -39,7 +39,7 @@ export default async function EstudianteDashboardPage() {
                     <span className="sm:hidden">Reportar</span>
                 </Link>
                 <Link
-                    href="/estudiante/certificados"
+                    href="/sistema/estudiante/certificados"
                     className="flex items-center gap-2 px-4 py-2 border border-slate-200 bg-white text-slate-700 rounded-xl font-semibold hover:bg-slate-50 transition-colors shadow-sm"
                 >
                     <Award className="w-4 h-4" />
@@ -189,7 +189,7 @@ export default async function EstudianteDashboardPage() {
                                             {opp.horas}h disponibles
                                         </span>
                                         <Link
-                                            href={`/estudiante/convocatorias/${opp.id}`}
+                                            href={`/sistema/estudiante/convocatorias/${opp.id}`}
                                             className="p-2 bg-[#8B1E1E]/10 text-[#8B1E1E] rounded-lg hover:bg-[#8B1E1E] hover:text-white transition-colors"
                                         >
                                             <ArrowRight className="w-4 h-4" />

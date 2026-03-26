@@ -14,60 +14,63 @@ declare global {
 
 // Clase para manejo seguro de Prisma
 class PrismaManager {
-  private static instance: PrismaClient | null = null;
   private static isConnected: boolean = false;
 
   // Obtener instancia singleton con validación
   static getInstance(): PrismaClient {
-    if (!this.instance) {
-      try {
-        // Validar variables de entorno antes de conectar
-        const envData = getEnv();
-        
-        // Crear instancia con configuración segura
-        this.instance = new PrismaClient({
-          datasources: {
-            db: {
-              url: envData.database.url
-            }
-          },
-          // Configuración de logging según entorno
-          log: envData.isDevelopment 
-            ? ['warn', 'error']  
-            : ['error'],
-          // Configuración de timeouts para prevenir conexiones colgadas
-          transactionOptions: {
-            timeout: 10000, 
-            maxWait: 5000,  
-          },
-          // Error formatting seguro
-          errorFormat: envData.isDevelopment ? 'pretty' : 'minimal',
-        });
-
-        // Marcar como conectado
-        this.isConnected = true;
-        
-        // Log de conexión exitosa (solo en desarrollo)
-        if (envData.isDevelopment) {
-          console.log('✅ Cliente Prisma inicializado correctamente');
-        }
-
-      } catch (error) {
-        this.isConnected = false;
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
-        
-        // No exponer detalles sensibles en producción
-        const envData = getEnv();
-        const safeMessage = envData.isProduction 
-          ? 'Error de conexión a base de datos'
-          : `Error al inicializar Prisma: ${errorMessage}`;
-        
-        console.error('❌', safeMessage);
-        throw new Error(safeMessage);
-      }
+    // Usar variable global para evitar múltiples instancias en desarrollo (hot-reload)
+    if (typeof globalThis.__prisma !== 'undefined' && globalThis.__prisma) {
+      return globalThis.__prisma;
     }
 
-    return this.instance;
+    try {
+      // Validar variables de entorno antes de conectar
+      const envData = getEnv();
+      
+      // Crear instancia con configuración segura
+      const prisma = new PrismaClient({
+        datasources: {
+          db: {
+            url: envData.database.url
+          }
+        },
+        // Configuración de logging según entorno
+        log: envData.isDevelopment 
+          ? ['warn', 'error']  
+          : ['error'],
+        // Configuración de timeouts para prevenir conexiones colgadas
+        transactionOptions: {
+          timeout: 10000, 
+          maxWait: 5000,  
+        },
+        // Error formatting seguro
+        errorFormat: envData.isDevelopment ? 'pretty' : 'minimal',
+      });
+
+      // Almacenar en variable global para reutilizar en hot-reloads
+      globalThis.__prisma = prisma;
+      this.isConnected = true;
+      
+      // Log de conexión exitosa (solo en desarrollo)
+      if (envData.isDevelopment) {
+        console.log('✅ Cliente Prisma inicializado correctamente');
+      }
+
+      return prisma;
+
+    } catch (error) {
+      this.isConnected = false;
+      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+      
+      // No exponer detalles sensibles en producción
+      const envData = getEnv();
+      const safeMessage = envData.isProduction 
+        ? 'Error de conexión a base de datos'
+        : `Error al inicializar Prisma: ${errorMessage}`;
+      
+      console.error('❌', safeMessage);
+      throw new Error(safeMessage);
+    }
   }
 
   // Verificar estado de conexión
@@ -99,10 +102,11 @@ class PrismaManager {
 
   // Desconectar de forma segura
   static async disconnect(): Promise<void> {
-    if (this.instance) {
+    const prisma = globalThis.__prisma;
+    if (prisma) {
       try {
-        await this.instance.$disconnect();
-        this.instance = null;
+        await prisma.$disconnect();
+        globalThis.__prisma = undefined;
         this.isConnected = false;
         console.log('✅ Cliente Prisma desconectado correctamente');
       } catch (error) {

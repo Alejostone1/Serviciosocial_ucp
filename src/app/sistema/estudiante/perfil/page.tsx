@@ -78,7 +78,7 @@ export default function PerfilPage() {
         return (
             <PageContainer>
                 <div className="flex justify-center py-20">
-                    <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-indigo-600 animate-spin" />
+                    <div className="w-8 h-8 rounded-full border-4 border-slate-200 border-t-[#8B1E1E] animate-spin" />
                 </div>
             </PageContainer>
         );
@@ -95,7 +95,7 @@ export default function PerfilPage() {
                 <button
                     onClick={handleSubmit}
                     disabled={guardando}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-6 py-2.5 bg-[#8B1E1E] text-white rounded-xl font-semibold hover:bg-[#a32424] transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {guardando ? (
                         <>
@@ -124,7 +124,7 @@ export default function PerfilPage() {
                                 <div className="absolute inset-0 bg-slate-900/60 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <Camera className="w-8 h-8 text-white" />
                                 </div>
-                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-indigo-600 border-2 border-white rounded-full flex items-center justify-center shadow-sm">
+                                <div className="absolute bottom-0 right-0 w-8 h-8 bg-[#8B1E1E] border-2 border-white rounded-full flex items-center justify-center shadow-sm">
                                     <Camera className="w-4 h-4 text-white" />
                                 </div>
                             </div>
@@ -136,7 +136,7 @@ export default function PerfilPage() {
                                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></div>
                                     Cuenta Activa
                                 </span>
-                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 font-medium text-xs rounded-full ring-1 ring-inset ring-indigo-600/20">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-[#8B1E1E] font-medium text-xs rounded-full ring-1 ring-inset ring-[#8B1E1E]/20">
                                     Estudiante
                                 </span>
                             </div>
@@ -175,7 +175,7 @@ export default function PerfilPage() {
                                         name="nombre"
                                         value={formData.nombre}
                                         onChange={handleInputChange}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-slate-900 text-sm transition-all"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent outline-none text-slate-900 text-sm transition-all"
                                     />
                                 </div>
                             </div>
@@ -189,7 +189,7 @@ export default function PerfilPage() {
                                         name="apellidos"
                                         value={formData.apellidos}
                                         onChange={handleInputChange}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-slate-900 text-sm transition-all"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent outline-none text-slate-900 text-sm transition-all"
                                     />
                                 </div>
                             </div>
@@ -200,7 +200,7 @@ export default function PerfilPage() {
                                     name="tipoDocumento"
                                     value={formData.tipoDocumento}
                                     onChange={handleInputChange}
-                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-slate-900 text-sm transition-all appearance-none"
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent outline-none text-slate-900 text-sm transition-all appearance-none"
                                 >
                                     <option value="CC">Cédula de Ciudadanía</option>
                                     <option value="TI">Tarjeta de Identidad</option>
@@ -255,7 +255,7 @@ export default function PerfilPage() {
                                         name="telefono"
                                         value={formData.telefono}
                                         onChange={handleInputChange}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-slate-900 text-sm transition-all"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent outline-none text-slate-900 text-sm transition-all"
                                         placeholder="No registrado"
                                     />
                                 </div>
@@ -306,7 +306,7 @@ export default function PerfilPage() {
                                         name="semestre"
                                         value={formData.semestre}
                                         onChange={handleInputChange}
-                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-600 focus:border-transparent outline-none text-slate-900 text-sm transition-all appearance-none"
+                                        className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#8B1E1E] focus:border-transparent outline-none text-slate-900 text-sm transition-all appearance-none"
                                     >
                                         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(s => (
                                             <option key={s} value={s}>{s}° Semestre</option>

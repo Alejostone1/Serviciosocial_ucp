@@ -586,7 +586,7 @@ export async function crearActividad(data: {
     
     try {
         const nuevaActividad = await db.execute(async (prisma) => {
-            return await prisma.actividad.create({
+            const result = await prisma.actividad.create({
                 data: {
                     id_convocatoria: data.id_convocatoria,
                     nombre: data.nombre,
@@ -618,6 +618,20 @@ export async function crearActividad(data: {
                     },
                 },
             });
+
+            const session = await getServerSession(authOptions);
+            await prisma.logActividad.create({
+                data: {
+                    id_usuario: session?.user?.id || data.creado_por,
+                    accion: 'CREAR_ACTIVIDAD',
+                    entidad: 'ACTIVIDAD',
+                    id_entidad: result.id,
+                    descripcion: `Nueva actividad '${result.nombre}' creada para la convocatoria '${result.convocatoria.titulo}'`,
+                    resultado: 'EXITOSO',
+                }
+            });
+
+            return result;
         }, 'Error al crear actividad');
 
         revalidatePath('/administrador/actividades');

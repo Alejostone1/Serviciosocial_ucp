@@ -78,7 +78,7 @@ export async function PUT(
         }
 
         const noticia = await db.execute(async (prisma) => {
-            return await prisma.noticia.update({
+            const updated = await prisma.noticia.update({
                 where: { id: params.id },
                 data: {
                     titulo,
@@ -90,6 +90,20 @@ export async function PUT(
                     fecha_publicacion: publicada && fecha_publicacion ? new Date(fecha_publicacion) : null,
                 }
             });
+
+            // Registrar log de auditoría
+            await prisma.logActividad.create({
+                data: {
+                    id_usuario: session.user.id,
+                    accion: 'ACTUALIZAR_NOTICIA',
+                    entidad: 'Noticia',
+                    id_entidad: params.id,
+                    descripcion: `Noticia '${updated.titulo}' actualizada`,
+                    resultado: 'EXITOSO',
+                }
+            });
+
+            return updated;
         }, 'Error al actualizar noticia');
 
         return NextResponse.json(noticia);
@@ -120,7 +134,7 @@ export async function DELETE(
         const existingNoticia = await db.execute(async (prisma) => {
             return await prisma.noticia.findUnique({
                 where: { id: params.id },
-                select: { id: true }
+                select: { id: true, titulo: true }
             });
         }, 'Error al verificar noticia');
 
@@ -132,8 +146,20 @@ export async function DELETE(
         }
 
         await db.execute(async (prisma) => {
-            return await prisma.noticia.delete({
+            await prisma.noticia.delete({
                 where: { id: params.id }
+            });
+
+            // Registrar log de auditoría
+            await prisma.logActividad.create({
+                data: {
+                    id_usuario: session.user.id,
+                    accion: 'ELIMINAR_NOTICIA',
+                    entidad: 'Noticia',
+                    id_entidad: params.id,
+                    descripcion: `Noticia '${existingNoticia.titulo}' eliminada permanentemente`,
+                    resultado: 'EXITOSO',
+                }
             });
         }, 'Error al eliminar noticia');
 

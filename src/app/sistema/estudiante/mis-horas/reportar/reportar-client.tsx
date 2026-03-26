@@ -14,7 +14,7 @@ import {
     ChevronRight, ArrowLeft, Activity, Layers,
     Target, Search, BookOpen
 } from 'lucide-react';
-import { crearReporteHoras, getActividadesDisponibles, getReportesRecientes } from './actions';
+import { crearReporteHoras, getActividadesDisponibles, getReportesRecientes, getActividadesConvocatoriasPasadas } from './actions';
 
 // ─── Schema de validación ─────────────────────────────────────────────────────
 const reporteSchema = z.object({
@@ -49,7 +49,19 @@ interface Actividad {
         modalidad: string;
         lugar: string | null;
         categoria: { id: string; nombre: string; color_hex: string | null } | null;
+        estado?: string;
+        fecha_cierre_postulacion?: string | null;
     };
+}
+
+interface ActividadPasada extends Actividad {
+    horas_reportadas_total: number;
+    reportes: {
+        id: string;
+        horas_reportadas: number;
+        estado: string;
+        reportado_en: string;
+    }[];
 }
 
 interface ReporteReciente {
@@ -88,7 +100,9 @@ export default function ReportarHorasClient() {
     const [actividadSeleccionada, setActividadSeleccionada] = useState<Actividad | null>(null);
     const [busquedaActividad, setBusquedaActividad] = useState('');
     const [archivos, setArchivos] = useState<File[]>([]);
-    const [paso, setPaso] = useState<1 | 2>(1); // 1: seleccionar, 2: formulario
+    const [paso, setPaso] = useState<1 | 2>(1);
+    const [actividadesPasadas, setActividadesPasadas] = useState<ActividadPasada[]>([]);
+    const [tabActivo, setTabActivo] = useState<'activas' | 'pasadas'>('activas');
 
     const {
         register, handleSubmit, formState: { errors },
@@ -106,9 +120,10 @@ export default function ReportarHorasClient() {
     useEffect(() => {
         const cargar = async () => {
             try {
-                const [acts, reps] = await Promise.all([
+                const [acts, reps, actsPasadas] = await Promise.all([
                     getActividadesDisponibles(),
-                    getReportesRecientes()
+                    getReportesRecientes(),
+                    getActividadesConvocatoriasPasadas()
                 ]);
 
                 setActividadesDisponibles(acts.map(a => ({
@@ -124,6 +139,7 @@ export default function ReportarHorasClient() {
                     }
                 })) as unknown as Actividad[]);
 
+                setActividadesPasadas(actsPasadas);
                 setReportesRecientes(reps.map(r => ({
                     ...r,
                     horas_reportadas: Number(r.horas_reportadas),
@@ -239,89 +255,187 @@ export default function ReportarHorasClient() {
             {/* ─────────── PASO 1: Seleccionar Actividad ─────────── */}
             {paso === 1 && (
                 <div className="space-y-4">
+                    {/* Tabs para cambiar entre activas y pasadas */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setTabActivo('activas')}
+                            className={`flex-1 h-12 rounded-xl text-sm font-semibold transition-all ${
+                                tabActivo === 'activas'
+                                    ? 'bg-[#8B1E1E] text-white shadow-lg shadow-red-900/10'
+                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                        >
+                            Convocatorias Activas
+                            <span className="ml-2 text-xs font-bold opacity-70">({actividadesDisponibles.length})</span>
+                        </button>
+                        <button
+                            onClick={() => setTabActivo('pasadas')}
+                            className={`flex-1 h-12 rounded-xl text-sm font-semibold transition-all ${
+                                tabActivo === 'pasadas'
+                                    ? 'bg-slate-800 text-white shadow-lg'
+                                    : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                            }`}
+                        >
+                            Convocatorias Pasadas
+                            <span className="ml-2 text-xs font-bold opacity-70">({actividadesPasadas.length})</span>
+                        </button>
+                    </div>
+
                     {/* Buscador */}
                     <div className="relative group">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-[#8B1E1E] transition-colors" />
                         <input
-                            placeholder="Buscar por nombre de actividad o convocatoria..."
+                            placeholder={`Buscar en ${tabActivo === 'activas' ? 'convocatorias activas' : 'convocatorias pasadas'}...`}
                             value={busquedaActividad}
                             onChange={e => setBusquedaActividad(e.target.value)}
                             className="w-full h-12 bg-white border border-slate-200 rounded-2xl pl-11 pr-4 text-sm font-medium focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none"
                         />
                     </div>
 
-                    {actividadesFiltradas.length === 0 ? (
-                        <div className="py-20 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-200">
-                            <BookOpen className="w-8 h-8 text-slate-200 mb-3" />
-                            <p className="text-sm font-semibold text-slate-400">No hay actividades disponibles</p>
-                            <p className="text-xs text-slate-300 mt-1">Verifica que estés postulado a una convocatoria activa</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {/* Agrupar por convocatoria */}
-                            {Object.entries(
-                                actividadesFiltradas.reduce<Record<string, Actividad[]>>((acc, a) => {
-                                    const titulo = a.convocatoria.titulo;
-                                    if (!acc[titulo]) acc[titulo] = [];
-                                    acc[titulo].push(a);
-                                    return acc;
-                                }, {})
-                            ).map(([titulo, acts]) => (
-                                <div key={titulo} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
-                                    {/* Cabecera convocatoria */}
-                                    <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
-                                        <div className="w-2 h-2 rounded-full bg-[#8B1E1E]" />
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest truncate">
-                                            {titulo}
-                                        </span>
-                                    </div>
-                                    {/* Actividades */}
-                                    <div className="divide-y divide-slate-50">
-                                        {acts.map(a => (
-                                            <button
-                                                key={a.id}
-                                                onClick={() => seleccionarActividad(a)}
-                                                className="w-full flex items-start gap-5 px-6 py-5 text-left hover:bg-slate-50/70 transition-colors group"
-                                            >
-                                                {/* Icono tipo */}
-                                                <div className="mt-0.5 shrink-0 w-9 h-9 bg-[#8B1E1E]/5 border border-[#8B1E1E]/10 rounded-xl flex items-center justify-center">
-                                                    <Activity className="w-4 h-4 text-[#8B1E1E]" />
-                                                </div>
-                                                {/* Info */}
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-semibold text-slate-800 group-hover:text-[#8B1E1E] transition-colors">
-                                                        {a.nombre}
-                                                    </p>
-                                                    <div className="flex flex-wrap items-center gap-3 mt-1.5">
-                                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                            {TIPO_LABELS[a.tipo_actividad] || a.tipo_actividad}
-                                                        </span>
-                                                        <span className="text-[10px] font-bold text-[#8B1E1E] uppercase tracking-widest">
-                                                            {a.horas_estimadas}h estimadas
-                                                        </span>
-                                                        {a.ubicacion && (
-                                                            <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
-                                                                <MapPin className="w-2.5 h-2.5" />
-                                                                {a.ubicacion}
+                    {/* Contenido según tab activo */}
+                    {tabActivo === 'activas' ? (
+                        // Actividades de convocatorias activas
+                        actividadesFiltradas.length === 0 ? (
+                            <div className="py-20 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-200">
+                                <BookOpen className="w-8 h-8 text-slate-200 mb-3" />
+                                <p className="text-sm font-semibold text-slate-400">No hay actividades disponibles</p>
+                                <p className="text-xs text-slate-300 mt-1">Verifica que estés postulado a una convocatoria activa</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {Object.entries(
+                                    actividadesFiltradas.reduce<Record<string, Actividad[]>>((acc, a) => {
+                                        const titulo = a.convocatoria.titulo;
+                                        if (!acc[titulo]) acc[titulo] = [];
+                                        acc[titulo].push(a);
+                                        return acc;
+                                    }, {})
+                                ).map(([titulo, acts]) => (
+                                    <div key={titulo} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3">
+                                            <div className="w-2 h-2 rounded-full bg-[#8B1E1E]" />
+                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest truncate">
+                                                {titulo}
+                                            </span>
+                                        </div>
+                                        <div className="divide-y divide-slate-50">
+                                            {acts.map(a => (
+                                                <button
+                                                    key={a.id}
+                                                    onClick={() => seleccionarActividad(a)}
+                                                    className="w-full flex items-start gap-5 px-6 py-5 text-left hover:bg-slate-50/70 transition-colors group"
+                                                >
+                                                    <div className="mt-0.5 shrink-0 w-9 h-9 bg-[#8B1E1E]/5 border border-[#8B1E1E]/10 rounded-xl flex items-center justify-center">
+                                                        <Activity className="w-4 h-4 text-[#8B1E1E]" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-semibold text-slate-800 group-hover:text-[#8B1E1E] transition-colors">
+                                                            {a.nombre}
+                                                        </p>
+                                                        <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                                {TIPO_LABELS[a.tipo_actividad] || a.tipo_actividad}
                                                             </span>
-                                                        )}
-                                                        {a.convocatoria.modalidad && (
-                                                            <span className="text-[10px] font-bold text-slate-300 uppercase">
-                                                                {MODAL_LABELS[a.convocatoria.modalidad] || a.convocatoria.modalidad}
+                                                            <span className="text-[10px] font-bold text-[#8B1E1E] uppercase tracking-widest">
+                                                                {a.horas_estimadas}h estimadas
                                                             </span>
+                                                            {a.ubicacion && (
+                                                                <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400">
+                                                                    <MapPin className="w-2.5 h-2.5" />
+                                                                    {a.ubicacion}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {a.descripcion && (
+                                                            <p className="text-xs text-slate-400 mt-1.5 line-clamp-1">{a.descripcion}</p>
                                                         )}
                                                     </div>
-                                                    {a.descripcion && (
-                                                        <p className="text-xs text-slate-400 mt-1.5 line-clamp-1">{a.descripcion}</p>
-                                                    )}
-                                                </div>
-                                                <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 mt-1 group-hover:text-[#8B1E1E] group-hover:translate-x-0.5 transition-all" />
-                                            </button>
-                                        ))}
+                                                    <ChevronRight className="w-4 h-4 text-slate-300 shrink-0 mt-1 group-hover:text-[#8B1E1E] group-hover:translate-x-0.5 transition-all" />
+                                                </button>
+                                            ))}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )
+                    ) : (
+                        // Actividades de convocatorias pasadas
+                        actividadesPasadas.length === 0 ? (
+                            <div className="py-20 flex flex-col items-center justify-center bg-white rounded-3xl border border-dashed border-slate-200">
+                                <BookOpen className="w-8 h-8 text-slate-200 mb-3" />
+                                <p className="text-sm font-semibold text-slate-400">No hay actividades de convocatorias pasadas</p>
+                                <p className="text-xs text-slate-300 mt-1">Aún no participaste en convocatorias finalizadas</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {Object.entries(
+                                    actividadesPasadas.reduce<Record<string, ActividadPasada[]>>((acc, a) => {
+                                        const titulo = a.convocatoria.titulo;
+                                        if (!acc[titulo]) acc[titulo] = [];
+                                        acc[titulo].push(a);
+                                        return acc;
+                                    }, {})
+                                ).map(([titulo, acts]) => (
+                                    <div key={titulo} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-slate-50 flex items-center gap-3 bg-slate-50/50">
+                                            <div className="w-2 h-2 rounded-full bg-slate-400" />
+                                            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest truncate">
+                                                {titulo}
+                                            </span>
+                                            <span className="ml-auto text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
+                                                FINALIZADA
+                                            </span>
+                                        </div>
+                                        <div className="divide-y divide-slate-50">
+                                            {acts.map(a => (
+                                                <div key={a.id} className="w-full flex items-start gap-5 px-6 py-5">
+                                                    <div className="mt-0.5 shrink-0 w-9 h-9 bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center">
+                                                        <Activity className="w-4 h-4 text-slate-500" />
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <p className="text-sm font-semibold text-slate-700">
+                                                            {a.nombre}
+                                                        </p>
+                                                        <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                                {TIPO_LABELS[a.tipo_actividad] || a.tipo_actividad}
+                                                            </span>
+                                                            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">
+                                                                {a.horas_reportadas_total}h reportadas
+                                                            </span>
+                                                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                                                {a.horas_estimadas}h estimadas
+                                                            </span>
+                                                        </div>
+                                                        {a.descripcion && (
+                                                            <p className="text-xs text-slate-400 mt-1.5 line-clamp-1">{a.descripcion}</p>
+                                                        )}
+                                                        {/* Lista de reportes de esta actividad */}
+                                                        {a.reportes.length > 0 && (
+                                                            <div className="mt-3 space-y-1.5">
+                                                                {a.reportes.slice(0, 3).map(r => {
+                                                                    const cfg = ESTADO_CONFIG[r.estado] || { label: r.estado, color: 'bg-slate-100 text-slate-600' };
+                                                                    return (
+                                                                        <div key={r.id} className="flex items-center gap-2 text-[10px]">
+                                                                            <span className={`px-1.5 py-0.5 rounded font-medium ${cfg.color}`}>
+                                                                                {cfg.label}
+                                                                            </span>
+                                                                            <span className="text-slate-400">{r.horas_reportadas}h</span>
+                                                                            <span className="text-slate-300">·</span>
+                                                                            <span className="text-slate-400">{new Date(r.reportado_en).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}</span>
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )
                     )}
                 </div>
             )}

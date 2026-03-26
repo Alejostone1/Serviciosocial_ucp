@@ -319,6 +319,18 @@ export async function crearConvocatoriaConActividades(data: any) {
                     horas_maximas: act.horas_maximas ? Number(act.horas_maximas) : null,
                 }));
 
+                // Registrar en el log de actividad
+                await prisma.logActividad.create({
+                    data: {
+                        id_usuario: userId,
+                        accion: 'CREAR_CONVOCATORIA_INTEGRADA',
+                        entidad: 'Convocatoria',
+                        id_entidad: convocatoria.id,
+                        descripcion: `Convocatoria '${convocatoria.titulo}' creada con ${actividadesConvertidas.length} actividades`,
+                        resultado: 'EXITOSO',
+                    }
+                });
+
                 return {
                     ...convocatoria,
                     horas_totales_ofrecidas: convocatoria.horas_totales_ofrecidas ? Number(convocatoria.horas_totales_ofrecidas) : null,
@@ -326,6 +338,18 @@ export async function crearConvocatoriaConActividades(data: any) {
                     total_actividades: actividadesConvertidas.length
                 };
             }
+
+            // Registrar en el log de actividad (si no hay actividades)
+            await prisma.logActividad.create({
+                data: {
+                    id_usuario: userId,
+                    accion: 'CREAR_CONVOCATORIA',
+                    entidad: 'Convocatoria',
+                    id_entidad: convocatoria.id,
+                    descripcion: `Convocatoria '${convocatoria.titulo}' creada sin actividades iniciales`,
+                    resultado: 'EXITOSO',
+                }
+            });
 
             return {
                 ...convocatoria,

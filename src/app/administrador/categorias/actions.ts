@@ -60,9 +60,21 @@ export async function editarCategoria(id: string, data: {
     icono?: string;
     color_hex?: string;
 }) {
-    await checkAdmin();
+    const session = await checkAdmin();
     const cat = await db.execute(async (prisma) => {
         const categoria = await prisma.categoriaServicioSocial.update({ where: { id }, data });
+        
+        await prisma.logActividad.create({
+            data: {
+                id_usuario: session.user.id,
+                accion: 'EDITAR_CATEGORIA',
+                entidad: 'CategoriaServicioSocial',
+                id_entidad: id,
+                descripcion: `Categoría '${categoria.nombre}' actualizada`,
+                resultado: 'EXITOSO',
+            },
+        });
+
         revalidatePath('/administrador/categorias');
         return categoria;
     }, 'Error al actualizar categoría');

@@ -2,8 +2,9 @@
 
 import React from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { Bell, Menu, UserCircle, LogOut, ShieldCheck } from 'lucide-react';
+import { Menu, UserCircle, LogOut, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
+import { AdminNotificationBell } from './admin-notification-bell';
 
 interface AdminHeaderProps {
     onMenuClick: () => void;
@@ -46,11 +47,8 @@ export function AdminHeader({ onMenuClick }: AdminHeaderProps) {
             </div>
 
             <div className="flex items-center gap-3 sm:gap-5">
-                <button className="relative p-2 text-[#64748b] hover:text-[#1e293b] hover:bg-[#f1f5f9] rounded-full transition-colors">
-                    <Bell className="w-5 h-5" />
-                    {/* Indicador de notificaciones no leídas */}
-                    <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#ef4444] rounded-full border-2 border-white" />
-                </button>
+                {/* Campana de Notificaciones Funcional (logs del sistema) */}
+                <AdminNotificationBell />
 
                 <div className="w-px h-6 bg-[#e2e8f0]" />
 

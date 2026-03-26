@@ -60,6 +60,19 @@ export async function actualizarFacultad(id: string, data: { nombre?: string; co
     try {
         return await db.execute(async (prisma) => {
             const facultad = await prisma.facultad.update({ where: { id }, data });
+            
+            const session = await getServerSession(authOptions);
+            await prisma.logActividad.create({
+                data: {
+                    id_usuario: session?.user?.id ?? undefined,
+                    accion: 'ACTUALIZAR_FACULTAD',
+                    entidad: 'Facultad',
+                    id_entidad: id,
+                    descripcion: `Facultad '${facultad.nombre}' actualizada`,
+                    resultado: 'EXITOSO',
+                }
+            });
+
             revalidatePath('/administrador/facultades');
             return facultad;
         }, 'Error al actualizar facultad');

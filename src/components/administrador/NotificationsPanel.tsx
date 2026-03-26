@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Bell, CheckCircle, Clock, User, ExternalLink, X } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 
@@ -22,8 +22,8 @@ export function NotificationsPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Cargar notificaciones
-  const cargarNotificaciones = async () => {
+  // Cargar notificaciones - memoizado para evitar recreación en cada render
+  const cargarNotificaciones = useCallback(async () => {
     if (!session?.user?.id) return;
     
     try {
@@ -38,7 +38,7 @@ export function NotificationsPanel() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session?.user?.id]);
 
   // Marcar como leídas
   const marcarComoLeidas = async (ids: string[]) => {
@@ -85,7 +85,7 @@ export function NotificationsPanel() {
     
     const interval = setInterval(cargarNotificaciones, 30000);
     return () => clearInterval(interval);
-  }, [session?.user?.id]);
+  }, [cargarNotificaciones]);
 
   const getIcono = (tipo: string) => {
     switch (tipo) {

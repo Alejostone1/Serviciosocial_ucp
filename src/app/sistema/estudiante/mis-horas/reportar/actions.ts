@@ -25,13 +25,47 @@ export async function getActividadesDisponibles() {
         throw new Error('No autorizado');
     }
 
+    const estudianteId = session.user.id;
+
     try {
+        // Primero obtener las postulaciones aceptadas del estudiante
+        const postulacionesAceptadas = await db.execute(async (prisma) => {
+            return await prisma.postulacion.findMany({
+                where: {
+                    id_estudiante: estudianteId,
+                    estado: 'ACEPTADA',
+                    convocatoria: {
+                        estado: { in: ['PUBLICADA', 'EN_CURSO'] },
+                        OR: [
+                            { fecha_cierre_postulacion: null },
+                            { fecha_cierre_postulacion: { gt: new Date() } }
+                        ]
+                    }
+                },
+                select: {
+                    id_convocatoria: true
+                }
+            });
+        }, 'Error al obtener postulaciones');
+
+        // Si no tiene postulaciones aceptadas, retornar array vacío
+        if (postulacionesAceptadas.length === 0) {
+            return [];
+        }
+
+        const convocatoriasIds = postulacionesAceptadas.map(p => p.id_convocatoria);
+
         const actividades = await db.execute(async (prisma) => {
             return await prisma.actividad.findMany({
                 where: {
                     esta_activa: true,
+                    id_convocatoria: { in: convocatoriasIds },
                     convocatoria: {
-                        estado: { in: ['PUBLICADA', 'EN_CURSO'] as any[] },
+                        estado: { in: ['PUBLICADA', 'EN_CURSO'] },
+                        OR: [
+                            { fecha_cierre_postulacion: null },
+                            { fecha_cierre_postulacion: { gt: new Date() } }
+                        ]
                     }
                 },
                 include: {
@@ -217,7 +251,7 @@ export async function crearReporteHoras(formData: FormData) {
                     descripcion_trabajo: validatedData.descripcion_trabajo,
                     notas_estudiante: validatedData.notas_estudiante,
                     fecha_actividad: fecha_actividad ? new Date(fecha_actividad) : null,
-                    estado: EstadoReporte.REPORTADO,
+                    estado: 'REPORTADO' as any,
                     reportado_en: new Date()
                 } as any,
                 include: {
@@ -269,6 +303,121 @@ export async function crearReporteHoras(formData: FormData) {
         }
         
         throw new Error(error instanceof Error ? error.message : 'Error al crear el reporte de horas');
+    }
+}
+
+// Obtener actividades de convocatorias completadas/finalizadas del estudiante
+export async function getActividadesConvocatoriasPasadas() {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user || session.user.role !== 'ESTUDIANTE') {
+        throw new Error('No autorizado');
+    }
+
+    const estudianteId = session.user.id;
+
+    try {
+        // Obtener postulaciones aceptadas de convocatorias que ya cerraron o finalizaron
+        const postulacionesPasadas = await db.execute(async (prisma) => {
+            return await prisma.postulacion.findMany({
+                where: {
+                    id_estudiante: estudianteId,
+                    estado: 'ACEPTADA',
+                    convocatoria: {
+                        OR: [
+                            { estado: { in: ['CERRADA', 'CANCELADA'] } },
+                            { 
+                                fecha_cierre_postulacion: { 
+                                    lt: new Date(),
+                                    not: null
+                                } 
+                            }
+                        ]
+                    }
+                },
+                select: {
+                    id_convocatoria: true,
+                    convocatoria: {
+                        select: {
+                            titulo: true,
+                            estado: true,
+                            fecha_cierre_postulacion: true
+                        }
+                    }
+                }
+            });
+        }, 'Error al obtener postulaciones pasadas');
+
+        if (postulacionesPasadas.length === 0) {
+            return [];
+        }
+
+        const convocatoriasIds = postulacionesPasadas.map(p => p.id_convocatoria);
+
+        const actividades = await db.execute(async (prisma) => {
+            return await prisma.actividad.findMany({
+                where: {
+                    id_convocatoria: { in: convocatoriasIds }
+                },
+                include: {
+                    convocatoria: {
+                        select: {
+                            titulo: true,
+                            descripcion: true,
+                            modalidad: true,
+                            lugar: true,
+                            estado: true,
+                            fecha_cierre_postulacion: true,
+                            horas_totales_ofrecidas: true,
+                            categoria: {
+                                select: {
+                                    id: true,
+                                    nombre: true,
+                                    color_hex: true
+                                }
+                            }
+                        }
+                    },
+                    reportes: {
+                        where: { id_estudiante: estudianteId },
+                        select: {
+                            id: true,
+                            horas_reportadas: true,
+                            estado: true,
+                            reportado_en: true
+                        },
+                        orderBy: { reportado_en: 'desc' }
+                    }
+                },
+                orderBy: {
+                    convocatoria: {
+                        fecha_cierre_postulacion: 'desc'
+                    }
+                }
+            });
+        }, 'Error al obtener actividades de convocatorias pasadas');
+
+        // Transformar los datos
+        return actividades.map((actividad: any) => ({
+            ...actividad,
+            horas_estimadas: Number(actividad.horas_estimadas),
+            horas_maximas: actividad.horas_maximas ? Number(actividad.horas_maximas) : null,
+            fecha_inicio: actividad.fecha_inicio ? actividad.fecha_inicio.toISOString() : null,
+            fecha_limite: actividad.fecha_limite ? actividad.fecha_limite.toISOString() : null,
+            horas_reportadas_total: actividad.reportes.reduce((sum: number, r: any) => sum + Number(r.horas_reportadas), 0),
+            reportes: actividad.reportes.map((r: any) => ({
+                ...r,
+                horas_reportadas: Number(r.horas_reportadas),
+                reportado_en: r.reportado_en.toISOString()
+            })),
+            convocatoria: {
+                ...actividad.convocatoria,
+                horas_totales_ofrecidas: actividad.convocatoria.horas_totales_ofrecidas ? Number(actividad.convocatoria.horas_totales_ofrecidas) : null
+            }
+        }));
+    } catch (error) {
+        console.error('Error en getActividadesConvocatoriasPasadas:', error);
+        throw new Error('No se pudieron cargar las actividades de convocatorias pasadas');
     }
 }
 

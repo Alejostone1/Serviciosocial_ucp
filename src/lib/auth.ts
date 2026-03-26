@@ -82,6 +82,22 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
     error: '/login',
   },
+  events: {
+    async signIn({ user }: any) {
+      if (user) {
+        await prisma.logActividad.create({
+          data: {
+            accion: 'LOGIN_EXITOSO',
+            entidad: 'USUARIO',
+            id_entidad: user.id,
+            descripcion: `Inicio de sesión exitoso: ${user.email} (${user.role})`,
+            id_usuario: user.id,
+            resultado: 'EXITOSO'
+          }
+        });
+      }
+    }
+  },
   secret: process.env.NEXTAUTH_SECRET,
   debug: false,
 };
