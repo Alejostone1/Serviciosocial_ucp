@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Download, Award, Calendar, FileText, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { generarPDFEstudiante } from '../certificados/actions-client';
 
 interface Certificado {
   id: string;
@@ -60,7 +61,7 @@ export default function MisCertificadosPage() {
     e.stopPropagation();
     try {
       setDownloading(id);
-      const toastId = toast.loading('Generando PDF del certificado...');
+      const toastId = String(toast.loading('Generando PDF del certificado...'));
 
       // Usar la misma acción server del estudiante
       const pdfBase64 = await generarPDFEstudiante(id);
@@ -86,14 +87,11 @@ export default function MisCertificadosPage() {
       toast.success('✅ PDF descargado exitosamente', { id: toastId });
     } catch (error) {
       console.error('Error descargando certificado:', error);
-      toast.error('Error al generar PDF: ' + (error as Error).message, { id: toast.loading('') });
+      toast.error('Error al generar PDF: ' + (error as Error).message, { id: String(toast.loading('')) });
     } finally {
       setDownloading(null);
     }
   };
-
-  // Import necesario
-  import { generarPDFEstudiante } from '../certificados/actions-client';
 
   if (loading) {
     return (

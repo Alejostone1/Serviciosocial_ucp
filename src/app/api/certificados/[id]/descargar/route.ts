@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generarPDFCertificadoEstudiante } from '@/app/sistema/estudiante/certificados/actions';
+import { generarPDFEstudiante } from '@/app/sistema/estudiante/certificados/actions-client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -17,7 +17,16 @@ export async function GET(
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
         }
 
-        const pdfBuffer = await generarPDFCertificadoEstudiante(params.id, session.user.id);
+        const pdfBase64 = await generarPDFEstudiante(params.id);
+        
+        // Convertir Base64 a Buffer
+        const byteCharacters = atob(pdfBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const pdfBuffer = Buffer.from(byteArray);
         
         return new NextResponse(pdfBuffer, {
             headers: {

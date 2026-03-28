@@ -137,11 +137,59 @@ export async function validarCertificado(codigoVerificacion: string) {
             valido: true,
             mensaje: 'Certificado válido y vigente',
             datos: {
-                ...certificado,
+                id: certificado.id,
+                codigo_verificacion: certificado.codigo_verificacion,
                 total_horas: Number(certificado.total_horas),
                 emitido_en: certificado.emitido_en.toLocaleDateString(),
                 periodo_desde: certificado.periodo_desde?.toLocaleDateString(),
-                periodo_hasta: certificado.periodo_hasta?.toLocaleDateString()
+                periodo_hasta: certificado.periodo_hasta?.toLocaleDateString(),
+                esta_vigente: certificado.esta_vigente,
+                descripcion: certificado.descripcion,
+                nombre_aliado: certificado.nombre_aliado,
+                nombre_convocatoria: certificado.nombre_convocatoria,
+                estudiante: certificado.estudiante ? {
+                    id: certificado.estudiante.id,
+                    primer_nombre: certificado.estudiante.primer_nombre,
+                    primer_apellido: certificado.estudiante.primer_apellido,
+                    correo: certificado.estudiante.correo,
+                    numero_documento: certificado.estudiante.numero_documento,
+                    programa: certificado.estudiante.programa ? {
+                        id: certificado.estudiante.programa.id,
+                        nombre: certificado.estudiante.programa.nombre,
+                        codigo: certificado.estudiante.programa.codigo,
+                        horas_requeridas: certificado.estudiante.programa.horas_requeridas ? Number(certificado.estudiante.programa.horas_requeridas) : null,
+                        facultad: certificado.estudiante.programa.facultad ? {
+                            id: certificado.estudiante.programa.facultad.id,
+                            nombre: certificado.estudiante.programa.facultad.nombre,
+                            codigo: certificado.estudiante.programa.facultad.codigo
+                        } : null
+                    } : null,
+                    perfil_estudiante: certificado.estudiante.perfil_estudiante ? {
+                        horas_acumuladas: Number(certificado.estudiante.perfil_estudiante.horas_acumuladas),
+                        horas_previas: Number(certificado.estudiante.perfil_estudiante.horas_previas),
+                        porcentaje_avance: Number(certificado.estudiante.perfil_estudiante.porcentaje_avance)
+                    } : null
+                } : null,
+                convocatoria: certificado.convocatoria ? {
+                    id: certificado.convocatoria.id,
+                    titulo: certificado.convocatoria.titulo,
+                    descripcion: certificado.convocatoria.descripcion,
+                    modalidad: certificado.convocatoria.modalidad,
+                    estado: certificado.convocatoria.estado,
+                    programa: certificado.convocatoria.programa ? {
+                        id: certificado.convocatoria.programa.id,
+                        nombre: certificado.convocatoria.programa.nombre,
+                        codigo: certificado.convocatoria.programa.codigo,
+                        horas_requeridas: certificado.convocatoria.programa.horas_requeridas ? Number(certificado.convocatoria.programa.horas_requeridas) : null,
+                        facultad: certificado.convocatoria.programa.facultad ? {
+                            id: certificado.convocatoria.programa.facultad.id,
+                            nombre: certificado.convocatoria.programa.facultad.nombre,
+                            codigo: certificado.convocatoria.programa.facultad.codigo
+                        } : null
+                    } : null,
+                    categoria: certificado.convocatoria.categoria
+                } : null,
+                emisor: certificado.emisor
             }
         };
     } catch (error) {
@@ -267,17 +315,60 @@ export async function getCertificados(filtros?: {
             }
 
             return certificadosFiltrados.map(certificado => ({
-                ...certificado,
+                id: certificado.id,
+                codigo_verificacion: certificado.codigo_verificacion,
                 total_horas: Number(certificado.total_horas),
                 emitido_en: certificado.emitido_en.toLocaleDateString(),
                 periodo_desde: certificado.periodo_desde?.toLocaleDateString() || null,
                 periodo_hasta: certificado.periodo_hasta?.toLocaleDateString() || null,
-                estudiante: {
-                    ...certificado.estudiante,
+                esta_vigente: certificado.esta_vigente,
+                descripcion: certificado.descripcion,
+                nombre_aliado: certificado.nombre_aliado,
+                nombre_convocatoria: certificado.nombre_convocatoria,
+                url_pdf: certificado.url_pdf,
+                estudiante: certificado.estudiante ? {
+                    id: certificado.estudiante.id,
+                    primer_nombre: certificado.estudiante.primer_nombre,
+                    primer_apellido: certificado.estudiante.primer_apellido,
+                    correo: certificado.estudiante.correo,
+                    numero_documento: certificado.estudiante.numero_documento,
+                    programa: certificado.estudiante.programa ? {
+                        id: certificado.estudiante.programa.id,
+                        nombre: certificado.estudiante.programa.nombre,
+                        codigo: certificado.estudiante.programa.codigo,
+                        horas_requeridas: certificado.estudiante.programa.horas_requeridas ? Number(certificado.estudiante.programa.horas_requeridas) : null,
+                        facultad: certificado.estudiante.programa.facultad ? {
+                            id: certificado.estudiante.programa.facultad.id,
+                            nombre: certificado.estudiante.programa.facultad.nombre,
+                            codigo: certificado.estudiante.programa.facultad.codigo
+                        } : null
+                    } : null,
                     perfil_estudiante: certificado.estudiante.perfil_estudiante ? {
-                        horas_acumuladas: Number(certificado.estudiante.perfil_estudiante.horas_acumuladas)
+                        horas_acumuladas: Number(certificado.estudiante.perfil_estudiante.horas_acumuladas),
+                        horas_previas: Number(certificado.estudiante.perfil_estudiante.horas_previas),
+                        porcentaje_avance: Number(certificado.estudiante.perfil_estudiante.porcentaje_avance)
                     } : null
-                }
+                } : null,
+                convocatoria: certificado.convocatoria ? {
+                    id: certificado.convocatoria.id,
+                    titulo: certificado.convocatoria.titulo,
+                    descripcion: certificado.convocatoria.descripcion,
+                    modalidad: certificado.convocatoria.modalidad,
+                    estado: certificado.convocatoria.estado,
+                    programa: certificado.convocatoria.programa ? {
+                        id: certificado.convocatoria.programa.id,
+                        nombre: certificado.convocatoria.programa.nombre,
+                        codigo: certificado.convocatoria.programa.codigo,
+                        horas_requeridas: certificado.convocatoria.programa.horas_requeridas ? Number(certificado.convocatoria.programa.horas_requeridas) : null,
+                        facultad: certificado.convocatoria.programa.facultad ? {
+                            id: certificado.convocatoria.programa.facultad.id,
+                            nombre: certificado.convocatoria.programa.facultad.nombre,
+                            codigo: certificado.convocatoria.programa.facultad.codigo
+                        } : null
+                    } : null,
+                    categoria: certificado.convocatoria.categoria
+                } : null,
+                emisor: certificado.emisor
             }));
         }, 'Error al obtener certificados');
     } catch (error) {

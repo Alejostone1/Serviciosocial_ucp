@@ -1,7 +1,18 @@
-export default function Page() {
+import { AliadoConvocatoriasList } from '@/app/sistema/aliado/components/AliadoConvocatoriasList';
+
+export default function ConvocatoriasPage() {
   return (
-    <div>
-      <h1>convocatorias</h1>
+    <div className="space-y-10 animate-in fade-in duration-700">
+      {/* Page Header */}
+      <div className="px-2">
+        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Gestión de Convocatorias</h1>
+        <p className="text-slate-500 text-lg font-normal mt-2 leading-relaxed max-w-2xl">
+          Como Aliado externo, puedes crear y supervisar tus convocatorias de servicio social.
+        </p>
+      </div>
+
+      {/* Convocatorias List */}
+      <AliadoConvocatoriasList />
     </div>
   );
 }
