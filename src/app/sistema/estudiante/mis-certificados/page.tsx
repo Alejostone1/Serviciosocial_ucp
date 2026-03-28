@@ -30,31 +30,31 @@ export default function MisCertificadosPage() {
   const { toast } = useToast();
 
   useEffect(() => {
+    const cargarCertificados = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/certificados');
+        if (!response.ok) {
+          throw new Error('Error al cargar certificados');
+        }
+        const data = await response.json();
+        setCertificados(data.certificados || []);
+      } catch (error) {
+        console.error('Error cargando certificados:', error);
+        toast({
+          title: 'Error',
+          description: 'No se pudieron cargar los certificados',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (user?.id) {
       cargarCertificados();
     }
-  }, [user?.id]);
-
-  const cargarCertificados = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/certificados');
-      if (!response.ok) {
-        throw new Error('Error al cargar certificados');
-      }
-      const data = await response.json();
-      setCertificados(data.certificados || []);
-    } catch (error) {
-      console.error('Error cargando certificados:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los certificados',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user?.id, toast]);
 
   const descargarCertificado = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
