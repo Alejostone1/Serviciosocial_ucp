@@ -1,0 +1,37 @@
+/* Estilos específicos para el fondo del login */
+
+.login-background-container {
+  position: relative;
+  overflow: hidden;
+}
+
+.login-background-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #8B1E1E;
+  z-index: 1;
+}
+
+.login-background-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=2000&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+  z-index: 2;
+}
+
+.login-background-content {
+  position: relative;
+  z-index: 4;
+}

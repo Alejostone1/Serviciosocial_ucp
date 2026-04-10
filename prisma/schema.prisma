@@ -1,0 +1,815 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// INSTITUCIÓN
+// ─────────────────────────────────────────────
+
+/// Facultades de la universidad
+model Facultad {
+  id              String     @id @default(uuid()) @db.Uuid
+  nombre          String     @unique @db.VarChar(150)
+  codigo          String?    @unique @db.VarChar(20)
+  descripcion     String?
+  decano          String?    @db.VarChar(200)
+  correo_contacto String?    @db.VarChar(200)
+  telefono_ext    String?    @db.VarChar(10)
+  esta_activo     Boolean    @default(true)
+  creado_en       DateTime   @default(now()) @db.Timestamptz(6)
+  actualizado_en  DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+  programas       Programa[]
+
+  @@map("facultades")
+}
+
+/// Programas académicos de cada facultad
+model Programa {
+  id               String              @id @default(uuid()) @db.Uuid
+  nombre           String              @unique @db.VarChar(150)
+  codigo           String?             @unique @db.VarChar(20)
+  id_facultad      String              @db.Uuid
+  nivel_formacion  NivelFormacion      @default(PREGRADO)
+  horas_requeridas Decimal             @default(120) @db.Decimal(6, 2)
+  esta_activo      Boolean             @default(true)
+  creado_en        DateTime            @default(now()) @db.Timestamptz(6)
+  actualizado_en   DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+
+  convocatorias         Convocatoria[]
+  facultad              Facultad            @relation(fields: [id_facultad], references: [id])
+  usuarios              Usuario[]
+  vinculaciones_aliados VinculacionAliado[]
+
+  @@index([id_facultad])
+ 
+}
+
+// ─────────────────────────────────────────────
+// USUARIOS
+// ─────────────────────────────────────────────
+
+/// Usuarios del sistema con sus diferentes roles
+model Usuario {
+  id                    String        @id @default(uuid()) @db.Uuid
+  primer_nombre         String        @db.VarChar(80)
+  segundo_nombre        String?       @db.VarChar(80)
+  primer_apellido       String        @db.VarChar(80)
+  segundo_apellido      String?       @db.VarChar(80)
+  tipo_documento        TipoDocumento @default(CC)
+  numero_documento      String        @unique @db.VarChar(20)
+  correo                String        @unique @db.VarChar(200)
+  correo_personal       String?       @db.VarChar(200)
+  contrasena_hash       String?       @db.VarChar(255)
+  telefono              String?       @db.VarChar(20)
+  foto_url              String?       @db.VarChar(500)
+  rol                   Rol
+  estado                EstadoUsuario @default(ACTIVO)
+  id_programa           String?       @db.Uuid
+  esta_bloqueado        Boolean       @default(false)
+  motivo_bloqueo        String?
+  ultimo_acceso         DateTime?     @db.Timestamptz(6)
+  requiere_cambio_clave Boolean       @default(false)
+  creado_en             DateTime      @default(now()) @db.Timestamptz(6)
+  actualizado_en        DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  programa                       Programa?               @relation(fields: [id_programa], references: [id])
+
+  perfil_estudiante              PerfilEstudiante?
+  sesiones                       SesionUsuario[]
+  tokens_recuperacion            TokenRecuperacion[]
+  logs                           LogActividad[]
+
+  actividades_creadas            Actividad[]
+  convocatorias_publicadas       Convocatoria[]          @relation("ConvocatoriaPublicador")
+  convocatorias_revisadas        Convocatoria[]          @relation("ConvocatoriaRevisor")
+
+  postulaciones_enviadas         Postulacion[]           @relation("PostulacionEstudiante")
+  postulaciones_revisadas        Postulacion[]           @relation("PostulacionRevisor")
+
+  reportes_como_estudiante       ReporteHoras[]          @relation("ReporteEstudiante")
+  reportes_revisados             ReporteHoras[]          @relation("ReporteRevisor")
+  historial_modificaciones       HistorialHoras[]
+
+  certificados_obtenidos         Certificado[]           @relation("CertificadoEstudiante")
+  certificados_emitidos          Certificado[]           @relation("CertificadoEmisor")
+
+  vinculaciones                  VinculacionAliado[]     @relation("VinculacionAliado")
+  vinculaciones_aprobadas        VinculacionAliado[]     @relation("VinculacionAprobador")
+
+  notificaciones                 Notificacion[]
+  notificaciones_masivas_creadas NotificacionMasiva[]    @relation("NotificacionMasivaCreador")
+  historial_envios_recibidos     HistorialEnvioNotif[]   @relation("HistorialEnvioDestino")
+  plantillas_creadas             PlantillaNotificacion[] @relation("PlantillaCreador")
+
+  solicitudes_perfil             SolicitudCambioPerfil[] @relation("SolicitudUsuario")
+  solicitudes_perfil_revisadas   SolicitudCambioPerfil[] @relation("SolicitudRevisor")
+
+  @@index([correo])
+  @@index([rol])
+  @@index([id_programa])
+  @@index([numero_documento])
+  @@index([primer_apellido, primer_nombre])
+  @@index([esta_bloqueado])
+  @@map("usuarios")
+}
+
+/// Perfil extendido exclusivo para estudiantes
+model PerfilEstudiante {
+  id_usuario          String     @id @db.Uuid
+  semestre_actual     Int?
+  codigo_estudiantil  String?    @unique @db.VarChar(30)
+  url_hoja_de_vida    String?    @db.VarChar(500)
+  habilidades         String[]
+  intereses           String[]
+  disponibilidad      Json?
+  modalidad_preferida Modalidad?
+  horas_previas       Decimal    @default(0) @db.Decimal(6, 2)
+  horas_acumuladas    Decimal    @default(0) @db.Decimal(6, 2)
+  porcentaje_avance   Decimal    @default(0) @db.Decimal(5, 2)
+  creado_en           DateTime   @default(now()) @db.Timestamptz(6)
+  actualizado_en      DateTime   @default(now()) @updatedAt @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+
+  @@index([codigo_estudiantil])
+  @@index([horas_acumuladas])
+  @@map("perfiles_estudiante")
+}
+
+/// Tokens para recuperación de contraseña
+model TokenRecuperacion {
+  id         String    @id @default(uuid()) @db.Uuid
+  id_usuario String    @db.Uuid
+  token      String    @unique @db.VarChar(255)
+  tipo       TipoToken @default(RECUPERACION)
+  expira_en  DateTime  @db.Timestamptz(6)
+  usado_en   DateTime? @db.Timestamptz(6)
+  ip_origen  String?   @db.VarChar(45)
+  creado_en  DateTime  @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+
+  @@index([id_usuario])
+  @@index([token])
+  @@index([expira_en])
+  @@map("tokens_recuperacion")
+}
+
+/// Registro de sesiones activas de usuario
+model SesionUsuario {
+  id           String    @id @default(uuid()) @db.Uuid
+  id_usuario   String    @db.Uuid
+  token_sesion String    @unique @db.VarChar(500)
+  ip_origen    String?   @db.VarChar(45)
+  user_agent   String?
+  dispositivo  String?   @db.VarChar(100)
+  esta_activa  Boolean   @default(true)
+  creado_en    DateTime  @default(now()) @db.Timestamptz(6)
+  expira_en    DateTime  @db.Timestamptz(6)
+  cerrada_en   DateTime? @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+
+  @@index([id_usuario, esta_activa])
+  @@index([token_sesion])
+  @@index([expira_en])
+  @@map("sesiones_usuario")
+}
+
+// ─────────────────────────────────────────────
+// CONVOCATORIAS
+// ─────────────────────────────────────────────
+
+/// Categorías para clasificar las convocatorias de servicio social
+model CategoriaServicioSocial {
+  id          String   @id @default(uuid()) @db.Uuid
+  nombre      String   @unique @db.VarChar(100)
+  descripcion String?
+  icono       String?  @db.VarChar(100)
+  color_hex   String?  @db.VarChar(7)
+  esta_activa Boolean  @default(true)
+  creado_en   DateTime @default(now()) @db.Timestamptz(6)
+  actualizado_en DateTime @default(now()) @updatedAt @db.Timestamptz(6)
+
+  convocatorias Convocatoria[]
+
+  @@map("categorias_servicio_social")
+}
+
+/// Convocatorias de servicio social publicadas por aliados
+model Convocatoria {
+  id                       String             @id @default(uuid()) @db.Uuid
+  titulo                   String             @db.VarChar(200)
+  descripcion              String
+  objetivo                 String?
+  id_categoria             String?            @db.Uuid
+  publicado_por            String             @db.Uuid
+  id_programa              String?            @db.Uuid
+  modalidad                Modalidad
+  lugar                    String?            @db.VarChar(200)
+  url_convocatoria_externa String?            @db.VarChar(500)
+  competencias_requeridas  String[]
+  estado                   EstadoConvocatoria @default(BORRADOR)
+  fecha_inicio             DateTime           @db.Date
+  fecha_fin                DateTime?          @db.Date
+  fecha_cierre_postulacion DateTime?          @db.Date
+  cupo_maximo              Int?
+  cupo_disponible          Int?
+  horas_totales_ofrecidas  Decimal?           @db.Decimal(6, 2)
+  url_banner               String?            @db.VarChar(500)
+  url_documento_adicional  String?            @db.VarChar(500)
+  requiere_entrevista      Boolean            @default(false)
+  creado_en                DateTime           @default(now()) @db.Timestamptz(6)
+  actualizado_en           DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+  publicado_en             DateTime?          @db.Timestamptz(6)
+  revisado_por   String?   @db.Uuid
+  revisado_en    DateTime? @db.Timestamptz(6)
+  motivo_rechazo String?   @db.VarChar(500)
+
+  categoria  CategoriaServicioSocial? @relation(fields: [id_categoria], references: [id])
+  programa   Programa?                @relation(fields: [id_programa], references: [id])
+  publicador Usuario                  @relation("ConvocatoriaPublicador", fields: [publicado_por], references: [id])
+  revisor    Usuario?                 @relation("ConvocatoriaRevisor", fields: [revisado_por], references: [id])
+
+  actividades    Actividad[]
+  certificados   Certificado[]
+  postulaciones  Postulacion[]
+  reportes_horas ReporteHoras[]
+
+  @@index([estado])
+  @@index([id_programa])
+  @@index([publicado_por])
+  @@index([fecha_inicio, fecha_fin])
+  @@index([fecha_cierre_postulacion])
+  @@index([modalidad])
+  @@index([revisado_por])
+  @@index([id_categoria])
+  @@map("convocatorias")
+}
+
+/// Postulaciones de estudiantes a convocatorias
+model Postulacion {
+  id                     String            @id @default(uuid()) @db.Uuid
+  id_convocatoria        String            @db.Uuid
+  id_estudiante          String            @db.Uuid
+  estado                 EstadoPostulacion @default(PENDIENTE)
+  motivacion             String?
+  url_hoja_vida          String?           @db.VarChar(500)
+  habilidades_relevantes String[]
+  postulado_en           DateTime          @default(now()) @db.Timestamptz(6)
+  revisado_en            DateTime?         @db.Timestamptz(6)
+  revisado_por           String?           @db.Uuid
+  notas_revision         String?
+  fecha_entrevista       DateTime?         @db.Timestamptz(6)
+  url_acta_entrevista    String?           @db.VarChar(500)
+
+  convocatoria Convocatoria @relation(fields: [id_convocatoria], references: [id])
+  estudiante   Usuario      @relation("PostulacionEstudiante", fields: [id_estudiante], references: [id])
+  revisor      Usuario?     @relation("PostulacionRevisor", fields: [revisado_por], references: [id])
+
+  @@unique([id_convocatoria, id_estudiante])
+  @@index([id_convocatoria, estado])
+  @@index([id_estudiante, estado])
+  @@index([revisado_por])
+  @@map("postulaciones")
+}
+
+// ─────────────────────────────────────────────
+// ACTIVIDADES Y REPORTES
+// ─────────────────────────────────────────────
+
+/// Actividades específicas dentro de una convocatoria
+model Actividad {
+  id                    String        @id @default(uuid()) @db.Uuid
+  id_convocatoria       String        @db.Uuid
+  nombre                String        @db.VarChar(200)
+  descripcion           String?
+  tipo_actividad        TipoActividad @default(GENERAL)
+  horas_estimadas       Decimal       @db.Decimal(5, 2)
+  horas_maximas         Decimal?      @db.Decimal(5, 2)
+  fecha_inicio          DateTime?     @db.Date
+  fecha_limite          DateTime?     @db.Date
+  ubicacion             String?       @db.VarChar(200)
+  materiales_requeridos String[]
+  esta_activa           Boolean       @default(true)
+  creado_por            String        @db.Uuid
+  creado_en             DateTime      @default(now()) @db.Timestamptz(6)
+  actualizado_en        DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+
+  creador      Usuario      @relation(fields: [creado_por], references: [id])
+  convocatoria Convocatoria @relation(fields: [id_convocatoria], references: [id])
+  reportes     ReporteHoras[]
+
+  @@index([id_convocatoria])
+  @@index([esta_activa])
+  @@index([fecha_limite])
+  @@map("actividades")
+}
+
+/// Reportes de horas realizadas por estudiantes en actividades
+model ReporteHoras {
+  id                  String        @id @default(uuid()) @db.Uuid
+  id_estudiante       String        @db.Uuid
+  id_actividad        String        @db.Uuid
+  /// Denormalizado para consultas directas por convocatoria sin JOIN adicional
+  id_convocatoria     String?       @db.Uuid
+  horas_reportadas    Decimal       @db.Decimal(5, 2)
+  horas_aprobadas     Decimal?      @db.Decimal(5, 2)
+  estado              EstadoReporte @default(REPORTADO)
+  descripcion_trabajo String?
+  /// Fecha real en que se realizó la actividad (puede diferir de reportado_en)
+  fecha_actividad     DateTime?     @db.Date
+  notas_estudiante    String?
+  id_revisor          String?       @db.Uuid
+  notas_revisor       String?
+  motivo_rechazo      String?
+  reportado_en        DateTime      @default(now()) @db.Timestamptz(6)
+  revisado_en         DateTime?     @db.Timestamptz(6)
+
+  actividad    Actividad     @relation(fields: [id_actividad], references: [id])
+  convocatoria Convocatoria? @relation(fields: [id_convocatoria], references: [id])
+  estudiante   Usuario       @relation("ReporteEstudiante", fields: [id_estudiante], references: [id])
+  revisor      Usuario?      @relation("ReporteRevisor", fields: [id_revisor], references: [id])
+  evidencias   EvidenciaReporte[]
+  historial    HistorialHoras[]
+
+  @@index([id_estudiante, estado])
+  @@index([id_actividad])
+  @@index([id_convocatoria, estado])
+  @@index([id_revisor, estado])
+  @@index([estado])
+  @@index([reportado_en(sort: Desc)])
+  @@index([fecha_actividad])
+  @@map("reportes_horas")
+}
+
+/// Evidencias adjuntas a un reporte de horas (texto, imagen o documento)
+model EvidenciaReporte {
+  id              String        @id @default(uuid()) @db.Uuid
+  id_reporte      String        @db.Uuid
+  tipo            TipoEvidencia @default(TEXTO)
+  /// Para evidencias de tipo TEXTO
+  contenido_texto String?
+  /// URL del archivo en almacenamiento
+  archivo_url     String?       @db.VarChar(500)
+  /// Nombre original del archivo
+  archivo_nombre  String?       @db.VarChar(200)
+  /// Tipo MIME (image/png, application/pdf…)
+  archivo_mime    String?       @db.VarChar(100)
+  /// Tamaño en bytes (MAX: 5 242 880 = 5 MB)
+  peso_bytes      Int?
+  /// ID en Cloudinary u otro proveedor de almacenamiento
+  public_id       String?       @db.VarChar(255)
+  subido_en       DateTime      @default(now()) @db.Timestamptz(6)
+
+  reporte ReporteHoras @relation(fields: [id_reporte], references: [id], onDelete: Cascade)
+
+  @@index([id_reporte])
+  @@index([tipo])
+  @@map("evidencias_reporte")
+}
+
+/// Trazabilidad de cambios en reportes de horas (auditoría)
+model HistorialHoras {
+  id               String   @id @default(uuid()) @db.Uuid
+  id_reporte_horas String   @db.Uuid
+  modificado_por   String   @db.Uuid
+  estado_anterior  String?  @db.VarChar(50)
+  estado_nuevo     String   @db.VarChar(50)
+  horas_anteriores Decimal? @db.Decimal(5, 2)
+  horas_nuevas     Decimal? @db.Decimal(5, 2)
+  razon            String?
+  modificado_en    DateTime @default(now()) @db.Timestamptz(6)
+  reporte     ReporteHoras @relation(fields: [id_reporte_horas], references: [id], onDelete: Cascade)
+  modificador Usuario      @relation(fields: [modificado_por], references: [id])
+
+  @@index([id_reporte_horas])
+  @@index([modificado_por])
+  @@index([modificado_en(sort: Desc)])
+  @@map("historial_horas")
+}
+
+// ─────────────────────────────────────────────
+// CERTIFICADOS Y VINCULACIONES
+// ─────────────────────────────────────────────
+
+/// Certificados de servicio social emitidos a estudiantes
+model Certificado {
+  id                  String    @id @default(uuid()) @db.Uuid
+  id_estudiante       String    @db.Uuid
+  id_convocatoria     String?   @db.Uuid
+  emitido_por         String    @db.Uuid
+  total_horas         Decimal   @db.Decimal(6, 2)
+  periodo_desde       DateTime? @db.Date
+  periodo_hasta       DateTime? @db.Date
+  codigo_verificacion String    @unique @default(uuid()) @db.Uuid
+  url_pdf             String    @db.VarChar(500)
+  descripcion         String?
+  nombre_aliado       String?   @db.VarChar(200)
+  nombre_convocatoria String?   @db.VarChar(200)
+  emitido_en          DateTime  @default(now()) @db.Timestamptz(6)
+  esta_vigente        Boolean   @default(true)
+  motivo_anulacion    String?
+
+  emisor       Usuario       @relation("CertificadoEmisor", fields: [emitido_por], references: [id])
+  convocatoria Convocatoria? @relation(fields: [id_convocatoria], references: [id])
+  estudiante   Usuario       @relation("CertificadoEstudiante", fields: [id_estudiante], references: [id])
+
+  @@index([codigo_verificacion])
+  @@index([id_estudiante])
+  @@index([id_convocatoria])
+  @@index([emitido_en])
+  @@index([esta_vigente])
+  @@index([emitido_por])
+  @@map("certificados")
+}
+
+/// Vinculaciones de aliados externos con programas académicos
+model VinculacionAliado {
+  id                    String            @id @default(uuid()) @db.Uuid
+  id_aliado             String            @db.Uuid
+  id_programa           String            @db.Uuid
+  aprobado_por          String?           @db.Uuid
+  estado                EstadoVinculacion @default(PENDIENTE)
+  documento_convenio    String?           @db.VarChar(500)
+  numero_convenio       String?           @db.VarChar(100)
+  fecha_inicio_convenio DateTime?         @db.Date
+  fecha_fin_convenio    DateTime?         @db.Date
+  observaciones         String?
+  creado_en             DateTime          @default(now()) @db.Timestamptz(6)
+  revisado_en           DateTime?         @db.Timestamptz(6)
+  actualizado_en        DateTime          @default(now()) @updatedAt @db.Timestamptz(6)
+
+  aprobador Usuario?  @relation("VinculacionAprobador", fields: [aprobado_por], references: [id])
+  aliado    Usuario   @relation("VinculacionAliado", fields: [id_aliado], references: [id])
+  programa  Programa  @relation(fields: [id_programa], references: [id])
+
+  // NOTA DE NEGOCIO: @@unique([id_aliado, id_programa]) bloquea re-solicitudes si el
+  // convenio queda en RECHAZADA o VENCIDA. Si el negocio necesita permitir nuevos
+  // intentos, hay dos opciones:
+  //   a) Soft-delete: añadir eliminado_en DateTime? y filtrar en queries
+  //   b) Índice parcial (requiere SQL raw en la migración, no soportado nativamente en Prisma)
+  // Por ahora se mantiene el unique — cambiar solo si el negocio lo requiere explícitamente.
+  @@unique([id_aliado, id_programa])
+  @@index([estado])
+  @@index([id_aliado])
+  @@index([id_programa])
+  @@map("vinculaciones_aliado_programa")
+}
+
+// ─────────────────────────────────────────────
+// SOLICITUDES DE CAMBIO DE PERFIL
+// ─────────────────────────────────────────────
+
+/// Solicitudes de cambio de datos de perfil por parte de estudiantes
+model SolicitudCambioPerfil {
+  id             String          @id @default(uuid()) @db.Uuid
+  id_usuario     String          @db.Uuid
+  /// Campos que el estudiante quiere cambiar: { primer_nombre?, telefono?, ... }
+  datos_nuevos   Json
+  estado         EstadoSolicitud @default(PENDIENTE)
+  motivo_rechazo String?
+  creado_en      DateTime        @default(now()) @db.Timestamptz(6)
+  revisado_en    DateTime?       @db.Timestamptz(6)
+  revisado_por   String?         @db.Uuid
+  actualizado_en DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+  usuario Usuario  @relation("SolicitudUsuario", fields: [id_usuario], references: [id], onDelete: Cascade)
+  revisor Usuario? @relation("SolicitudRevisor", fields: [revisado_por], references: [id])
+
+  @@index([id_usuario])
+  @@index([estado])
+  @@index([revisado_por])
+  @@map("solicitudes_cambio_perfil")
+}
+
+// ─────────────────────────────────────────────
+// NOTIFICACIONES
+// ─────────────────────────────────────────────
+
+/// Notificaciones internas del sistema para usuarios
+model Notificacion {
+  id         String           @id @default(uuid()) @db.Uuid
+  id_usuario String           @db.Uuid
+  tipo       TipoNotificacion
+  titulo     String           @db.VarChar(200)
+  mensaje    String
+  url_accion String?          @db.VarChar(500)
+  leida      Boolean          @default(false)
+  leida_en   DateTime?        @db.Timestamptz(6)
+  creado_en  DateTime         @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario @relation(fields: [id_usuario], references: [id], onDelete: Cascade)
+
+  @@index([id_usuario, leida])
+  @@index([id_usuario, creado_en(sort: Desc)])
+  @@map("notificaciones")
+}
+
+/// Logs de actividad del sistema para auditoría completa
+model LogActividad {
+  id               String          @id @default(uuid()) @db.Uuid
+  id_usuario       String?         @db.Uuid
+  accion           String          @db.VarChar(100)
+  entidad          String?         @db.VarChar(100)
+  id_entidad       String?         @db.Uuid
+  descripcion      String?
+  datos_anteriores Json?
+  datos_nuevos     Json?
+  ip_origen        String?         @db.VarChar(45)
+  user_agent       String?
+  resultado        ResultadoAccion @default(EXITOSO)
+  metadata         Json?
+  creado_en        DateTime        @default(now()) @db.Timestamptz(6)
+
+  usuario Usuario? @relation(fields: [id_usuario], references: [id])
+
+  @@index([id_usuario])
+  @@index([accion])
+  @@index([creado_en(sort: Desc)])
+  @@index([entidad, id_entidad])
+  @@index([resultado])
+  @@map("logs_actividad")
+}
+
+// ─────────────────────────────────────────────
+// NOTICIAS
+// ─────────────────────────────────────────────
+
+/// Noticias institucionales del sistema
+model Noticia {
+  id                String          @id @default(uuid()) @db.Uuid
+  titulo            String          @db.VarChar(200)
+  slug              String          @unique @db.VarChar(250)
+  resumen           String
+  contenido         String
+  autor             String          @db.VarChar(150)
+  publicada         Boolean         @default(false)
+  fecha_publicacion DateTime?       @db.Timestamptz(6)
+  creado_en         DateTime        @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime        @default(now()) @updatedAt @db.Timestamptz(6)
+
+  imagenes ImagenNoticia[]
+
+  @@index([publicada])
+  @@index([fecha_publicacion(sort: Desc)])
+  @@index([slug])
+  @@map("noticias")
+}
+
+/// Imágenes asociadas a noticias
+model ImagenNoticia {
+  id                   String   @id @default(uuid()) @db.Uuid
+  id_noticia           String   @db.Uuid
+  url_imagen           String   @db.VarChar(500)
+  public_id_cloudinary String   @db.VarChar(255)
+  orden                Int      @default(0)
+  creado_en            DateTime @default(now()) @db.Timestamptz(6)
+
+  noticia Noticia @relation(fields: [id_noticia], references: [id], onDelete: Cascade)
+
+  @@index([id_noticia])
+  @@index([orden])
+  @@map("imagenes_noticias")
+}
+
+// ─────────────────────────────────────────────
+// PLANTILLAS Y ENVÍOS MASIVOS
+// ─────────────────────────────────────────────
+
+/// Plantillas reutilizables para envío de notificaciones masivas
+model PlantillaNotificacion {
+  id                String           @id @default(uuid()) @db.Uuid
+  nombre            String           @unique @db.VarChar(100)
+  tipo              TipoNotificacion
+  asunto_correo     String?          @db.VarChar(200)
+  mensaje_plantilla String
+  mensaje_whatsapp  String?
+  variables         Json?
+  esta_activa       Boolean          @default(true)
+  creado_por        String           @db.Uuid
+  creado_en         DateTime         @default(now()) @db.Timestamptz(6)
+  actualizado_en    DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+
+  creador                Usuario              @relation("PlantillaCreador", fields: [creado_por], references: [id])
+  notificaciones_masivas NotificacionMasiva[]
+
+  @@index([tipo])
+  @@index([esta_activa])
+  @@map("plantillas_notificacion")
+}
+
+/// Envíos masivos de notificaciones a grupos de usuarios
+model NotificacionMasiva {
+  id                   String              @id @default(uuid()) @db.Uuid
+  id_plantilla         String?             @db.Uuid
+  titulo               String              @db.VarChar(200)
+  mensaje              String
+  canales              CanalNotificacion[]
+  creado_por           String              @db.Uuid
+  fecha_programada     DateTime?           @db.Timestamptz(6)
+  destinatarios_filtro Json?
+  destinatarios_count  Int                 @default(0)
+  enviados_count       Int                 @default(0)
+  fallidos_count       Int                 @default(0)
+  estado               EstadoEnvio         @default(PENDIENTE)
+  enviado_en           DateTime?           @db.Timestamptz(6)
+  creado_en            DateTime            @default(now()) @db.Timestamptz(6)
+  actualizado_en       DateTime            @default(now()) @updatedAt @db.Timestamptz(6)
+
+  creador          Usuario                @relation("NotificacionMasivaCreador", fields: [creado_por], references: [id])
+  plantilla        PlantillaNotificacion? @relation(fields: [id_plantilla], references: [id])
+  historial_envios HistorialEnvioNotif[]
+
+  @@index([estado])
+  @@index([creado_por])
+  @@index([creado_en(sort: Desc)])
+  @@map("notificaciones_masivas")
+}
+
+/// Historial detallado de cada envío individual de notificaciones masivas
+model HistorialEnvioNotif {
+  id                     String            @id @default(uuid()) @db.Uuid
+  id_notificacion_masiva String            @db.Uuid
+  id_usuario_destino     String            @db.Uuid
+  canal                  CanalNotificacion
+  estado                 EstadoEnvio       @default(PENDIENTE)
+  direccion_envio        String?           @db.VarChar(300)
+  mensaje_enviado        String?
+  error_detalle          String?
+  intentos               Int               @default(1)
+  enviado_en             DateTime?         @db.Timestamptz(6)
+  creado_en              DateTime          @default(now()) @db.Timestamptz(6)
+
+  notificacion_masiva NotificacionMasiva @relation(fields: [id_notificacion_masiva], references: [id], onDelete: Cascade)
+  usuario_destino     Usuario            @relation("HistorialEnvioDestino", fields: [id_usuario_destino], references: [id], onDelete: Cascade)
+
+  @@index([id_notificacion_masiva])
+  @@index([id_usuario_destino])
+  @@index([estado])
+  @@index([canal])
+  @@map("historial_envio_notif")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+/// Estados de un usuario en el sistema
+enum EstadoUsuario {
+  ACTIVO
+  BLOQUEADO
+  DESACTIVADO
+}
+
+/// Roles disponibles en el sistema
+enum Rol {
+  ADMINISTRADOR
+  PROFESOR
+  ALIADO
+  AUXILIAR
+  ESTUDIANTE
+}
+
+/// Tipos de identificación
+enum TipoDocumento {
+  CC
+  TI
+  CE
+  PASAPORTE
+  NIT
+}
+
+/// Nivel de formación del programa
+enum NivelFormacion {
+  PREGRADO
+  POSGRADO
+  ESPECIALIZACION
+  MAESTRIA
+  DOCTORADO
+  TECNICO
+  TECNOLOGICO
+}
+
+/// Modalidades de trabajo/estudio
+enum Modalidad {
+  PRESENCIAL
+  VIRTUAL
+  HIBRIDA
+}
+
+/// Estados del ciclo de vida de una convocatoria
+enum EstadoConvocatoria {
+  BORRADOR
+  ESPERANDO_CONFIRMACION
+  PUBLICADA
+  EN_CURSO
+  CERRADA
+  CANCELADA
+  RECHAZADA
+}
+
+/// Estados de una postulación
+enum EstadoPostulacion {
+  PENDIENTE
+  EN_REVISION
+  ACEPTADA
+  RECHAZADA
+  RETIRADA
+}
+
+/// Estados de un reporte de horas
+enum EstadoReporte {
+  REPORTADO
+  PENDIENTE_VALIDACION
+  VALIDADO_AUXILIAR
+  PENDIENTE_APROBACION_FINAL
+  EN_REVISION
+  APROBADO
+  RECHAZADO
+  REQUIERE_AJUSTE
+}
+
+/// Estados de la vinculación aliado-programa
+enum EstadoVinculacion {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  SUSPENDIDA
+  VENCIDA
+}
+
+/// Tipos de token de seguridad
+enum TipoToken {
+  RECUPERACION
+  ACTIVACION
+  VERIFICACION
+}
+
+/// Tipos de actividad dentro de una convocatoria
+enum TipoActividad {
+  GENERAL
+  CAPACITACION
+  CAMPO
+  ADMINISTRATIVA
+  INVESTIGACION
+  COMUNITARIA
+}
+
+/// Tipos de evidencia que puede adjuntar un estudiante en su reporte
+enum TipoEvidencia {
+  /// Descripción o nota escrita
+  TEXTO
+  /// Foto JPG, PNG, WEBP (max 5 MB)
+  IMAGEN
+  /// PDF, DOCX u otro documento (max 5 MB)
+  DOCUMENTO
+}
+
+/// Tipos de notificación
+enum TipoNotificacion {
+  POSTULACION_RECIBIDA
+  POSTULACION_ACEPTADA
+  POSTULACION_RECHAZADA
+  REPORTE_ENVIADO
+  REPORTE_APROBADO
+  REPORTE_RECHAZADO
+  REPORTE_AJUSTE
+  CERTIFICADO_EMITIDO
+  CONVOCATORIA_PUBLICADA
+  SISTEMA
+}
+
+/// Canales de envío de notificaciones
+enum CanalNotificacion {
+  INTERNA
+  CORREO
+  WHATSAPP
+  SMS
+}
+
+/// Estados de envío de notificaciones
+enum EstadoEnvio {
+  PENDIENTE
+  ENVIADO
+  FALLIDO
+  REINTENTANDO
+}
+
+/// Resultado de una acción registrada en logs
+enum ResultadoAccion {
+  EXITOSO
+  FALLIDO
+  PARCIAL
+}
+
+/// Estado de las solicitudes de cambio de perfil
+enum EstadoSolicitud {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+}
