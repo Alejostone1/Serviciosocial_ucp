@@ -117,7 +117,7 @@ export async function crearConvocatoriaProfesor(data: any, enviarARevision: bool
                 }
             });
 
-            // Si hay actividades, crearlas también
+// Si hay actividades, crearlas también
             if (data.actividades && data.actividades.length > 0) {
                 await prisma.actividad.createMany({
                     data: data.actividades.map((act: any) => ({
@@ -130,6 +130,17 @@ export async function crearConvocatoriaProfesor(data: any, enviarARevision: bool
                         creado_por: userId,
                     }))
                 });
+            }
+
+            // ✅ Crear notificación para administradores
+            if (enviarARevision) {
+                const { createAdminNotifications } = await import('@/lib/notifications');
+                await createAdminNotifications(
+                    'CONVOCATORIA_PUBLICADA',
+                    'Nueva Convocatoria Profesor',
+                    `El profesor ha creado: "${convocatoria.titulo}". Requiere revisión. Cupos: ${convocatoria.cupo_maximo || 'Ilimitado'}.`,
+                    `/administrador/convocatorias`
+                );
             }
 
             revalidatePath('/sistema/profesor/convocatorias');

@@ -301,6 +301,33 @@ export async function crearReporteHoras(formData: FormData) {
             });
         }, 'Error al registrar log de actividad');
 
+        // ✅ Notificar al creador de la actividad y admins
+        try {
+            // Notificar al creador de la actividad
+            if (actividad.creado_por) {
+                const { createNotificationToUser } = await import('@/lib/notifications');
+                await createNotificationToUser(
+                    actividad.creado_por,
+                    'REPORTE_ENVIADO',
+                    'Nuevo Reporte de Horas',
+                    `Estudiante reportó ${validatedData.horas_reportadas} horas en "${actividad.nombre}". Revisar evidencias.`,
+                    `/sistema/auxiliar/validacion`
+                );
+            }
+
+            // Notificar a administradores
+            const { createAdminNotifications } = await import('@/lib/notifications');
+            await createAdminNotifications(
+                'REPORTE_ENVIADO',
+                'Nuevo Reporte de Horas Pendiente',
+                `Estudiante reportó ${validatedData.horas_reportadas}h en actividad "${actividad.nombre}". Requiere validación.`,
+                `/administrador/reportes`
+            );
+        } catch (notifError) {
+            console.warn('No se pudieron enviar notificaciones:', notifError);
+            // No falla el reporte por notificaciones
+        }
+
         // Revalidar rutas correctas
         revalidatePath('/sistema/estudiante/mis-horas');
         revalidatePath('/sistema/estudiante/mis-horas/reportar');

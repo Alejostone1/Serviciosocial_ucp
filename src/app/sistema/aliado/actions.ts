@@ -297,9 +297,20 @@ export async function crearConvocatoriaAliado(data: any, enviarARevision: boolea
             });
         }
 
-        // Crear notificaciones automáticas para administradores
+        // ✅ Usar helper unificado para mejor rendimiento
         if (enviarARevision) {
-            await crearNotificacionConvocatoriaCreada(prisma, convocatoria, session.user.id);
+            const aliado = await prisma.usuario.findUnique({
+                where: { id: session.user.id },
+                select: { primer_nombre: true, primer_apellido: true }
+            });
+            const { createAdminNotifications } = await import('@/lib/notifications');
+            const nombreAliado = aliado ? `${aliado.primer_nombre || 'N/N'} ${aliado.primer_apellido || ''}` : 'Aliado';
+            await createAdminNotifications(
+                'CONVOCATORIA_PUBLICADA',
+                'Nueva Convocatoria Aliado',
+                `Aliado "${nombreAliado}" creó: "${convocatoria.titulo}". Cupos: ${convocatoria.cupo_maximo || 'Ilimitado'}. Revisar ahora.`,
+                `/administrador/convocatorias`
+            );
         }
 
         revalidatePath('/sistema/aliado/convocatorias');
@@ -327,7 +338,7 @@ async function crearNotificacionConvocatoriaCreada(prisma: any, convocatoria: an
         }
 
         // Crear notificaciones para cada administrador
-        const notificacionesData = administradores.map(admin => ({
+        const notificacionesData = administradores.map((admin: { id: string }) => ({
             id_usuario: admin.id,
             tipo: 'CONVOCATORIA_PUBLICADA',
             titulo: 'Nueva Convocatoria Creada',
