@@ -1,18 +1,27 @@
-# Sistema de Servicio Social - Universidad Católica de Pereira
+# 🎓 UCP Servicio Social - Sistema de Gestión Integral
 
-Plataforma integral para la gestión del servicio social universitario que facilita la administración de convocatorias, seguimiento de horas de servicio social, generación de certificados y comunicación institucional.
+<div align="center">
+  <img src="https://img.icons8.com/color/gradient/256/university.png" alt="UCP Logo" width="120"/>
+</div>
 
-## Descripción del Proyecto
+**Sistema web moderno para la gestión integral del servicio social universitario**  
+Desarrollado con tecnología de última generación para optimizar el proceso administrativo y mejorar la experiencia de estudiantes, administradores y aliados.
 
-El Sistema de Servicio Social de la Universidad Católica de Pereira (UCP) es una aplicación web fullstack diseñada para digitalizar y optimizar la gestión del servicio social universitario. El sistema permite a los estudiantes participar en convocatorias de servicio social, registrar sus actividades, acumular horas requeridas y obtener certificados válidos, mientras que los administradores pueden gestionar convocatorias, usuarios y generar reportes.
+---
 
-### Objetivo del Sistema
-- Centralizar la gestión del servicio social universitario
-- Facilitar el seguimiento de horas de servicio de los estudiantes
-- Digitalizar el proceso de convocatorias y postulaciones
-- Generar certificados automáticos y verificables
-- Mejorar la comunicación entre estudiantes y administradores
+## 📋 Tabla de Contenidos
 
+- [🏗️ Arquitectura del Sistema](#arquitectura-del-sistema)
+- [🛠️ Tecnologías Utilizadas](#tecnologías-utilizadas)
+- [📁 Estructura del Proyecto](#estructura-del-proyecto)
+- [🚀 Instalación y Configuración](#instalación-y-configuración)
+- [⚡ Scripts Disponibles](#scripts-disponibles)
+- [🔧 Variables de Entorno](#variables-de-entorno)
+- [🔄 Flujo del Sistema](#flujo-del-sistema)
+- [✅ Buenas Prácticas](#buenas-prácticas)
+- [🏛️️ Convenciones del Proyecto](#convenciones-del-proyecto)
+- [📊 Estado del Proyecto](#estado-del-proyecto)
+- [🔮 Posibles Mejoras](#posibles-mejoras)
 ### Problema que Resuelve
 Elimina la gestión manual de procesos administrativos, reduce errores en el seguimiento de horas, proporciona trazabilidad completa de las actividades y ofrece una experiencia moderna tanto para estudiantes como para administradores.
 
