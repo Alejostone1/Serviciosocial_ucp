@@ -1,6 +1,6 @@
-# 📐 Arquitectura del Proyecto — Sistema de Servicio Social UCP
+# 📐 Arquitectura del Proyecto — UCP Servicio Social v5
 
-> **Stack:** Next.js 14 (App Router) · TypeScript · Prisma ORM · PostgreSQL · NextAuth.js · Tailwind CSS
+> **Stack:** Next.js 14.2.15 (App Router) · TypeScript 5.3.2 · Prisma 5.22.0 · PostgreSQL · NextAuth.js 4.24.5 · Tailwind CSS 3.3.6
 
 ---
 
@@ -65,35 +65,39 @@ Convocatoria publicada
 │   └── uploads/                   ← Carpeta para archivos subidos localmente
 │
 ├── src/
-│   ├── app/                       ← Rutas Next.js (App Router)
-│   │   ├── (autenticacion)/       ← Grupo de rutas públicas de auth
-│   │   ├── administrador/         ← Panel admin (protegido)
-│   │   ├── sistema/               ← Paneles por rol (protegidos)
-│   │   │   ├── estudiante/
-│   │   │   ├── profesor/
-│   │   │   ├── aliado/
-│   │   │   └── auxiliar/
-│   │   ├── api/                   ← API Routes (endpoints REST internos)
-│   │   ├── convocatorias/         ← Página pública de convocatorias
-│   │   ├── noticias/              ← Página pública de noticias
-│   │   └── page.tsx               ← Landing page pública
+│   ├── app/                       ← Rutas Next.js (App Router) - 303 archivos
+│   │   ├── (autenticacion)/       ← Grupo de rutas públicas de auth (8 archivos)
+│   │   ├── Publico/              ← Rutas públicas (6 archivos)
+│   │   ├── administrador/         ← Panel admin (protegido) - 119 archivos
+│   │   ├── sistema/               ← Paneles por rol (protegidos) - 111 archivos
+│   │   │   ├── estudiante/       ← Módulo estudiantes
+│   │   │   ├── profesor/         ← Módulo profesores
+│   │   │   ├── aliado/           ← Módulo aliados
+│   │   │   └── auxiliar/         ← Módulo auxiliares
+│   │   ├── api/                   ← API Routes (endpoints REST internos) - 55 archivos
+│   │   ├── layout.tsx             ← Layout principal
+│   │   ├── page.tsx               ← Landing page pública
+│   │   ├── error.tsx              ← Manejo de errores
+│   │   └── loading.tsx            ← Estados de carga
 │   │
-│   ├── components/                ← Componentes reutilizables
-│   │   ├── ui/                    ← Primitivos de UI (botones, inputs, cards...)
-│   │   ├── forms/                 ← Formularios completos
-│   │   ├── layout/                ← Header, Sidebar, Breadcrumb...
-│   │   ├── convocatorias/         ← Componentes específicos de convocatorias
-│   │   ├── certificados/          ← Vista previa, QR, verificador
-│   │   ├── horas/                 ← Bandeja, historial, evidencia
-│   │   ├── noticias/              ← Formularios y dashboard de noticias
-│   │   ├── data-display/          ← Tablas, estados vacíos, loaders
-│   │   └── home/                  ← Secciones de la landing page
+│   ├── components/                ← Componentes reutilizables - 91 archivos
+│   │   ├── ui/                    ← Primitivos de UI (30 archivos) - botones, inputs, cards...
+│   │   ├── forms/                 ← Formularios completos (8 archivos)
+│   │   ├── layout/                ← Header, Sidebar, Breadcrumb... (10 archivos)
+│   │   ├── administrador/          ← Components admin (1 archivo)
+│   │   ├── certificados/          ← Vista previa, QR, verificador (3 archivos)
+│   │   ├── convocatorias/         ← Componentes específicos de convocatorias (6 archivos)
+│   │   ├── horas/                 ← Bandeja, historial, evidencia (4 archivos)
+│   │   ├── noticias/              ← Formularios y dashboard de noticias (9 archivos)
+│   │   ├── data-display/          ← Tablas, estados vacíos, loaders (6 archivos)
+│   │   ├── home/                  ← Secciones de la landing page (10 archivos)
+│   │   └── estudiante/            ← Components estudiantes (4 archivos)
 │   │
-│   ├── contexts/                  ← React Contexts globales
-│   ├── hooks/                     ← Custom hooks de React
-│   ├── lib/                       ← Utilidades, configuración de librerías
-│   ├── styles/                    ← CSS global y design tokens
-│   └── types/                     ← Tipos TypeScript globales
+│   ├── contexts/                  ← React Contexts globales (1 archivo)
+│   ├── hooks/                     ← Custom hooks de React (8 archivos)
+│   ├── lib/                       ← Utilidades, configuración de librerías (18 archivos)
+│   ├── styles/                    ← CSS global y design tokens (3 archivos)
+│   └── types/                     ← Tipos TypeScript globales (3 archivos)
 │
 ├── scripts/                       ← Scripts de utilidad (no son parte del app)
 ├── middleware.ts                  ← Protección de rutas (Next.js middleware)
@@ -438,19 +442,23 @@ Cada archivo es un formulario reutilizable que puede usarse en páginas y modale
 | Archivo | Qué hace |
 |---------|---------|
 | `prisma.ts` | Instancia singleton de PrismaClient |
-| `auth.ts` | Configuración de NextAuth (providers, callbacks, JWT) |
-| `email.ts` | Envío de correos (probablemente Nodemailer o Resend) |
+| `auth.ts` | Configuración de NextAuth 4.24.5 (providers, callbacks, JWT) |
+| `email.ts` | Envío de correos (Nodemailer 7.0.13 + Resend 2.0.0) |
 | `whatsapp.ts` | Integración con WhatsApp para notificaciones |
-| `fileUpload.ts` | Subida de archivos a Cloudinary o almacenamiento local |
-| `formatters.ts` | Formateo de fechas, números, monedas |
-| `validations.ts` | Esquemas Zod de validación |
+| `fileUpload.ts` | Subida de archivos a Cloudinary (next-cloudinary 5.10.0) |
+| `formatters.ts` | Formateo de fechas, números, monedas (date-fns 2.30.0) |
+| `validations.ts` | Esquemas Zod 3.25.76 de validación |
 | `utils.ts` | Funciones de utilidad generales (`cn()`, etc.) |
 | `constants.ts` | Constantes del sistema (estados, roles, textos) |
-| `security.ts` | Funciones de seguridad (hash, tokens, sanitización) |
+| `security.ts` | Funciones de seguridad (bcrypt 6.0.0 + bcryptjs 3.0.3) |
 | `decimal-utils.ts` | Manejo de tipos Decimal de Prisma |
 | `api-client.ts` | Cliente HTTP para llamadas fetch desde el cliente |
 | `env.ts` | Validación y tipado de variables de entorno |
 | `btn-variants.ts` | Variantes de botones para clases Tailwind |
+| `pdf-utils.ts` | Generación de PDFs (jspdf 4.2.1 + jspdf-autotable 5.0.7) |
+| `excel-utils.ts` | Exportación a Excel (exceljs 4.4.0 + xlsx 0.18.5) |
+| `qr-utils.ts` | Generación de códigos QR (qrcode 1.5.4) |
+| `canvas-utils.ts` | Manipulación de imágenes (canvas 3.2.1 + html2canvas 1.4.1) |
 
 ### `src/hooks/`
 

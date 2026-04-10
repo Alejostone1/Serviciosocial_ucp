@@ -1,6 +1,6 @@
-# Sistema de Servicio Social - Universidad Católica de Pereira
+# 🎓 UCP Servicio Social v5 - Sistema de Gestión Integral
 
-Plataforma integral para la gestión del servicio social universitario que facilita la administración de convocatorias, seguimiento de horas de servicio social, generación de certificados y comunicación institucional.
+Plataforma integral moderna para la gestión del servicio social universitario que facilita la administración de convocatorias, seguimiento de horas de servicio social, generación de certificados y comunicación institucional.
 
 ## Descripción del Proyecto
 
@@ -19,42 +19,66 @@ Elimina la gestión manual de procesos administrativos, reduce errores en el seg
 ### Tipo de Aplicación
 Aplicación web fullstack construida con Next.js 14, TypeScript y PostgreSQL, diseñada para ser escalable y mantenible.
 
-## Tecnologías Utilizadas
+## 🛠️ Tecnologías Utilizadas
 
-### Frontend
-- **Next.js 14** - Framework React con renderizado del lado del servidor
-- **TypeScript** - Tipado estático para mayor robustez
-- **TailwindCSS** - Framework de CSS para diseño rápido y responsive
-- **shadcn/ui** - Sistema de componentes UI reutilizables
-- **Lucide React** - Biblioteca de iconos
-- **React Hook Form** - Manejo de formularios con validación
-- **Framer Motion** - Animaciones y transiciones
-- **Recharts** - Gráficos y visualizaciones
+### 🎯 **Core Stack**
 
-### Backend
-- **Next.js API Routes** - Endpoints RESTful
-- **Prisma ORM** - Mapeo objeto-relacional para base de datos
-- **NextAuth.js** - Autenticación y gestión de sesiones
-- **bcrypt.js** - Encriptación de contraseñas
-- **Zod** - Validación de datos
-- **Nodemailer** - Envío de correos electrónicos
-- **Resend** - Servicio de email transaccional
+| Categoría | Tecnología | Versión | Propósito |
+|-----------|------------|----------|-----------|
+| **Framework Frontend** | ![Next.js](https://img.shields.io/badge/Next.js-000000?style=for-the-badge&logo=next.js) | 14.2.15 | Framework full-stack con SSR |
+| **UI Library** | ![React](https://img.shields.io/badge/React-2020AEE?style=for-the-badge&logo=react) | 18.2.0 | Librería de componentes |
+| **Language** | ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript) | 5.3.2 | Tipado estático estricto |
+| **Styling** | ![Tailwind](https://img.shields.io/badge/Tailwind-06B6D4?style=for-the-badge&logo=tailwind-css) | 3.3.6 | Utility-first CSS |
+| **Database** | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=for-the-badge&logo=postgresql) | 15+ | Base de datos relacional |
 
-### Base de Datos
-- **PostgreSQL** - Base de datos relacional
-- **Prisma** - ORM y migraciones
+### 🛠️ **Librerías Principales**
 
-### Desarrollo
-- **ESLint** - Linting de código
-- **PostCSS** - Procesamiento de CSS
-- **tsx** - Ejecución de TypeScript
+| Tipo | Librería | Versión | Uso Principal |
+|-------|------------|----------|----------------|
+| **ORM** | @prisma/client | 5.22.0 | Mapeo objeto-relacional |
+| **Auth** | next-auth | 4.24.5 | Gestión de sesiones |
+| **Forms** | react-hook-form | 7.71.2 | Manejo de formularios |
+| **Validation** | zod | 3.25.76 | Validación de datos |
+| **UI Components** | @radix-ui | 1.3.0 | Componentes accesibles |
+| **Charts** | recharts | 2.10.3 | Visualizaciones de datos |
+| **HTTP Client** | axios | 1.7.9 | Peticiones API |
 
-### Utilidades
-- **date-fns** - Manipulación de fechas
-- **jsPDF** - Generación de PDFs
-- **html2canvas** - Captura de elementos HTML
-- **xlsx** - Manejo de archivos Excel
-- **QRCode** - Generación de códigos QR
+### 🎨 **Librerías UI y Estilo**
+
+- **@/ui**: Componentes personalizados con diseño consistente
+- **lucide-react**: Iconos modernos y consistentes (0.294.0)
+- **framer-motion**: Animaciones fluidas y micro-interacciones (12.35.1)
+- **sonner**: Sistema de notificaciones toast (2.0.7)
+- **clsx**: Utilidad para className condicional (2.0.0)
+
+### 📄 **Manejo de Documentos**
+
+- **jspdf**: Generación de PDFs para certificados (4.2.1)
+- **jspdf-autotable**: Tablas en PDFs (5.0.7)
+- **exceljs**: Exportación de datos a Excel (4.4.0)
+- **xlsx**: Manejo de archivos Excel (0.18.5)
+- **canvas**: Manipulación de imágenes para evidencias (3.2.1)
+- **html2canvas**: Captura de elementos HTML (1.4.1)
+- **qrcode**: Generación de códigos QR (1.5.4)
+
+### 🔐 **Seguridad y Autenticación**
+
+- **bcrypt**: Encriptación de contraseñas (6.0.0)
+- **bcryptjs**: Encriptación alternativa (3.0.3)
+- **next-auth**: Autenticación con múltiples proveedores (4.24.5)
+
+### 📧 **Comunicación y Storage**
+
+- **nodemailer**: Envío de correos electrónicos (7.0.13)
+- **resend**: Servicio de email transaccional (2.0.0)
+- **next-cloudinary**: Almacenamiento de archivos en la nube (5.10.0)
+
+### 🛠️ **Herramientas de Desarrollo**
+
+- **ESLint**: Linting de código (8.54.0)
+- **PostCSS**: Procesamiento de CSS (8.4.32)
+- **tsx**: Ejecución de TypeScript (4.4.0)
+- **date-fns**: Manipulación de fechas (2.30.0)
 
 ## Requisitos Previos
 
@@ -179,49 +203,54 @@ npm start ;
 ## Estructura del Proyecto
 
 ```
-ucp-servicio-social/
-├── prisma/                     # Base de datos
-│   ├── schema.prisma          # Esquema de la base de datos
-│   ├── seed.ts                # Datos iniciales
-│   ├── migrations/            # Historial de migraciones
-│   └── modelo.sql             # Script SQL completo
-├── src/
-│   ├── app/                   # App Router (Next.js 13+)
-│   │   ├── (autenticacion)/   # Rutas de autenticación
-│   │   ├── administrador/     # Panel administrativo
-│   │   ├── api/               # API Routes
-│   │   ├── convocatorias/      # Gestión de convocatorias
-│   │   ├── noticias/          # Gestión de noticias
-│   │   ├── sistema/           # Sistema y configuración
-│   │   ├── layout.tsx         # Layout principal
-│   │   └── page.tsx           # Página de inicio
-│   ├── components/            # Componentes React
-│   │   ├── ui/                # Componentes UI base (shadcn/ui)
-│   │   ├── forms/             # Formularios reutilizables
-│   │   ├── layout/            # Componentes de layout
-│   │   ├── home/              # Componentes de página principal
-│   │   ├── certificados/      # Componentes de certificados
-│   │   ├── convocatorias/     # Componentes de convocatorias
-│   │   ├── noticias/          # Componentes de noticias
-│   │   └── horas/             # Componentes de gestión de horas
-│   ├── lib/                   # Utilidades y configuración
-│   │   ├── prisma.ts          # Configuración de Prisma
-│   │   ├── auth.ts            # Configuración de NextAuth
-│   │   ├── utils.ts           # Funciones utilitarias
-│   │   ├── whatsapp.ts        # Integración WhatsApp
-│   │   └── email.ts           # Funciones de email
-│   ├── hooks/                 # Custom React hooks
-│   ├── types/                 # Definiciones de tipos TypeScript
-│   ├── contexts/              # React Context providers
-│   └── styles/                # Estilos globales
-├── public/                    # Archivos estáticos
-│   └── uploads/               # Archivos subidos por usuarios
-├── scripts/                   # Scripts de utilidad
-├── tailwind.config.ts         # Configuración de TailwindCSS
-├── next.config.js             # Configuración de Next.js
-├── tsconfig.json              # Configuración de TypeScript
-├── components.json            # Configuración de shadcn/ui
-└── middleware.ts              # Middleware de Next.js
+ServicioUCP_v5/
+├── 📁 prisma/                    # Base de datos y migraciones
+│   ├── schema.prisma           # Modelo de datos completo
+│   ├── modelo.sql              # Script SQL de creación
+│   ├── seed.ts                 # Datos iniciales
+│   └── seed-notificaciones.ts  # Notificaciones iniciales
+│
+├── 📁 src/                       # Código fuente principal
+│   ├── 📁 app/                    # Next.js App Router (303 archivos)
+│   │   ├── 📁 (autenticacion)/   # Rutas de autenticación (8 archivos)
+│   │   ├── 📁 Publico/           # Rutas públicas (6 archivos)
+│   │   ├── 📁 administrador/       # Panel administrativo (119 archivos)
+│   │   ├── 📁 sistema/            # Sistema interno (111 archivos)
+│   │   │   ├── 📁 estudiante/      # Módulo estudiantes
+│   │   │   ├── 📁 profesor/        # Módulo profesores
+│   │   │   ├── 📁 aliado/          # Módulo aliados
+│   │   │   └── 📁 auxiliar/        # Módulo auxiliares
+│   │   ├── 📁 api/                # API Routes (55 archivos)
+│   │   ├── layout.tsx              # Layout principal
+│   │   ├── page.tsx               # Home page
+│   │   ├── error.tsx              # Manejo de errores
+│   │   └── loading.tsx            # Estados de carga
+│   │
+│   ├── 📁 components/             # Componentes React (91 archivos)
+│   │   ├── 📁 ui/                # Componentes base UI (30 archivos)
+│   │   ├── 📁 forms/             # Formularios reutilizables (8 archivos)
+│   │   ├── 📁 layout/            # Components de layout (10 archivos)
+│   │   ├── 📁 administrador/      # Components admin (1 archivo)
+│   │   ├── 📁 certificados/      # Components certificados (3 archivos)
+│   │   ├── 📁 convocatorias/      # Components convocatorias (6 archivos)
+│   │   ├── 📁 estudiante/        # Components estudiantes (4 archivos)
+│   │   ├── 📁 horas/             # Components horas (4 archivos)
+│   │   ├── 📁 noticias/          # Components noticias (9 archivos)
+│   │   ├── 📁 home/              # Components home (10 archivos)
+│   │   └── 📁 data-display/      # Visualización de datos (6 archivos)
+│   │
+│   ├── 📁 lib/                    # Utilidades y configuración (18 archivos)
+│   │   ├── auth.ts               # Configuración NextAuth
+│   │   ├── 📁 hooks/                  # Custom React hooks (8 archivos)
+│   │   ├── 📁 types/                 # Tipos TypeScript (3 archivos)
+│   │   └── 📁 styles/                # Estilos globales (3 archivos)
+│   │
+├── 📄 package.json                # Dependencias y scripts
+├── 📄 tailwind.config.ts           # Configuración Tailwind
+├── 📄 tsconfig.json               # Configuración TypeScript
+├── 📄 middleware.ts                # Middleware de Next.js
+├── 📄 components.json              # Configuración shadcn/ui
+└── 📄 README.md                  # Documentación del proyecto
 ```
 
 ### Explicación de Carpetas Principales
