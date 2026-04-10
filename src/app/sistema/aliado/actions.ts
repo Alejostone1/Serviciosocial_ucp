@@ -297,9 +297,54 @@ export async function crearConvocatoriaAliado(data: any, enviarARevision: boolea
             });
         }
 
+        // Crear notificaciones automáticas para administradores
+        if (enviarARevision) {
+            await crearNotificacionConvocatoriaCreada(prisma, convocatoria, session.user.id);
+        }
+
         revalidatePath('/sistema/aliado/convocatorias');
         return convocatoria;
     }, 'Error al crear convocatoria');
+}
+
+// Función auxiliar para crear notificaciones cuando un aliado crea una convocatoria
+async function crearNotificacionConvocatoriaCreada(prisma: any, convocatoria: any, idAliado: string) {
+    try {
+        // Obtener todos los administradores
+        const administradores = await prisma.usuario.findMany({
+            where: { rol: 'ADMINISTRADOR' },
+            select: { id: true }
+        });
+
+        // Obtener datos del aliado que creó la convocatoria
+        const aliado = await prisma.usuario.findUnique({
+            where: { id: idAliado },
+            select: { primer_nombre: true, primer_apellido: true }
+        });
+
+        if (!aliado || administradores.length === 0) {
+            return;
+        }
+
+        // Crear notificaciones para cada administrador
+        const notificacionesData = administradores.map(admin => ({
+            id_usuario: admin.id,
+            tipo: 'CONVOCATORIA_PUBLICADA',
+            titulo: 'Nueva Convocatoria Creada',
+            mensaje: `El aliado ${aliado.primer_nombre} ${aliado.primer_apellido} ha creado una nueva convocatoria: "${convocatoria.titulo}" que requiere revisión.`,
+            leida: false,
+            creado_en: new Date()
+        }));
+
+        // Insertar todas las notificaciones
+        if (notificacionesData.length > 0) {
+            await prisma.notificacion.createMany({
+                data: notificacionesData
+            });
+        }
+    } catch (error) {
+        console.error('Error al crear notificaciones de convocatoria:', error);
+    }
 }
 
 /**

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { EstadoPostulacion } from '@prisma/client';
+import { EstadoPostulacion, TipoNotificacion } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
@@ -229,6 +229,39 @@ export async function POST(request: NextRequest) {
         resultado: 'EXITOSO'
       }
     });
+
+    // Crear notificación para el estudiante que se postuló
+    await prisma.notificacion.create({
+      data: {
+        id_usuario: id_estudiante,
+        tipo: TipoNotificacion.POSTULACION_RECIBIDA,
+        titulo: 'Postulación Recibida',
+        mensaje: `Hemos recibido tu postulación a la convocatoria "${convocatoria.titulo}" exitosamente. Estado actual: EN REVISIÓN. Estaremos revisando tu solicitud y te notificaremos el resultado a la brevedad posible.`,
+        leida: false,
+        creado_en: new Date()
+      }
+    });
+
+    // Crear notificaciones para administradores sobre la nueva postulación
+    const administradores = await prisma.usuario.findMany({
+      where: { rol: 'ADMINISTRADOR' },
+      select: { id: true }
+    });
+
+    if (administradores.length > 0) {
+      const notificacionesAdmin = administradores.map(admin => ({
+        id_usuario: admin.id,
+        tipo: TipoNotificacion.POSTULACION_RECIBIDA,
+        titulo: 'Nueva Postulación Recibida',
+        mensaje: `El estudiante ${postulacion.estudiante.primer_nombre} ${postulacion.estudiante.primer_apellido} se ha postulado a la convocatoria: "${convocatoria.titulo}"`,
+        leida: false,
+        creado_en: new Date()
+      }));
+
+      await prisma.notificacion.createMany({
+        data: notificacionesAdmin
+      });
+    }
 
     return NextResponse.json(postulacion, { status: 201 });
   } catch (error) {
