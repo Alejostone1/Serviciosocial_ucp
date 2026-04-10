@@ -118,15 +118,15 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                         <p>Posibles razones:</p>
                         <ul className="text-left space-y-2 ml-4">
                             <li className="flex items-start gap-2">
-                                <span className="text-red-500">â¢</span>
+                                <span className="text-red-500">•</span>
                                 <span>El certificado ha sido anulado</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-red-500">â¢</span>
-                                <span>El cÃ³digo de verificaciÃ³n es incorrecto</span>
+                                <span className="text-red-500">•</span>
+                                <span>El código de verificación es incorrecto</span>
                             </li>
                             <li className="flex items-start gap-2">
-                                <span className="text-red-500">â¢</span>
+                                <span className="text-red-500">•</span>
                                 <span>El certificado ha expirado</span>
                             </li>
                         </ul>
@@ -151,10 +151,10 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-3">
                             <Shield className="w-6 h-6 text-[#8B1E1E]" />
-                            <h1 className="text-xl font-bold text-[#1e293b]">ValidaciÃ³n de Certificado</h1>
+                            <h1 className="text-xl font-bold text-[#1e293b]">Validación de Certificado</h1>
                         </div>
                         <div className="text-sm text-gray-500">
-                            Sistema de VerificaciÃ³n de Autenticidad
+                            Sistema de Verificación de Autenticidad
                         </div>
                     </div>
                 </div>
@@ -167,15 +167,15 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                         <div className="bg-gradient-to-r from-green-500 to-green-600 p-6 text-white">
                             <div className="flex items-center gap-3 mb-4">
                                 <CheckCircle className="w-8 h-8" />
-                                <h2 className="text-2xl font-bold">Certificado VÃ¡lido</h2>
+                                <h2 className="text-2xl font-bold">Certificado Válido</h2>
                             </div>
                             <p className="text-green-100">
-                                Este certificado es autÃ©ntico y se encuentra vigente en nuestros registros.
+                                Este certificado es auténtico y se encuentra vigente en nuestros registros.
                             </p>
                         </div>
 
                         <div className="p-6 space-y-4">
-                            {/* InformaciÃ³n del estudiante */}
+                            {/* Información del estudiante */}
                             <div className="border-l-4 border-green-500 pl-4">
                                 <h3 className="font-bold text-[#1e293b] mb-3 flex items-center gap-2">
                                     <User className="w-5 h-5 text-green-600" />
@@ -223,7 +223,7 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">PerÃ­odo:</span>
+                                        <span className="text-gray-600">Período:</span>
                                         <span className="font-semibold">
                                             {resultado.datos.periodo_desde && resultado.datos.periodo_hasta
                                                 ? `${resultado.datos.periodo_desde} - ${resultado.datos.periodo_hasta}`
@@ -232,7 +232,7 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                                         </span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Fecha EmisiÃ³n:</span>
+                                        <span className="text-gray-600">Fecha Emisión:</span>
                                         <span className="font-semibold">
                                             {resultado.datos.emitido_en}
                                         </span>
@@ -246,7 +246,7 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                                 </div>
                             </div>
 
-                            {/* InformaciÃ³n de convocatoria si existe */}
+                            {/* Información de convocatoria si existe */}
                             {resultado.datos.convocatoria && (
                                 <div className="border-l-4 border-purple-500 pl-4">
                                     <h3 className="font-bold text-[#1e293b] mb-3 flex items-center gap-2">
@@ -255,13 +255,13 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                                     </h3>
                                     <div className="space-y-2">
                                         <div className="flex justify-between">
-                                            <span className="text-gray-600">TÃ­tulo:</span>
+                                            <span className="text-gray-600">Título:</span>
                                             <span className="font-semibold">
                                                 {resultado.datos.convocatoria.titulo}
                                             </span>
                                         </div>
                                         <div className="flex justify-between">
-                                            <span className="text-gray-600">CategorÃ­a:</span>
+                                            <span className="text-gray-600">Categoría:</span>
                                             <span className="font-semibold">
                                                 {resultado.datos.convocatoria.categoria?.nombre || 'N/A'}
                                             </span>
@@ -277,10 +277,10 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                         <div className="bg-gradient-to-r from-[#8B1E1E] to-blue-900 p-6 text-white">
                             <div className="flex items-center gap-3 mb-4">
                                 <QrCode className="w-8 h-8" />
-                                <h2 className="text-2xl font-bold">CÃ³digo QR</h2>
+                                <h2 className="text-2xl font-bold">Código QR</h2>
                             </div>
                             <p className="text-blue-100">
-                                Escanee este cÃ³digo QR para validar rÃ¡pidamente el certificado
+                                Escanee este código QR para validar rápidamente el certificado
                             </p>
                         </div>
 
@@ -291,7 +291,7 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                                     {qrCodeDataURL && (
                                         <Image
                                             src={qrCodeDataURL}
-                                            alt="CÃ³digo QR de validaciÃ³n"
+                                            alt="Código QR de validación"
                                             width={192}
                                             height={192}
                                             className="rounded-lg"
@@ -299,15 +299,15 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                                     )}
                                 </div>
                                 <p className="text-sm text-gray-500 mt-2">
-                                    CÃ³digo Ãºnico de verificaciÃ³n
+                                    Código único de verificación
                                 </p>
                             </div>
 
-                            {/* CÃ³digo de verificaciÃ³n */}
+                            {/* Código de verificación */}
                             <div className="bg-gray-50 rounded-lg p-4">
                                 <div className="flex items-center justify-between mb-2">
                                     <span className="text-sm font-medium text-gray-700">
-                                        CÃ³digo de VerificaciÃ³n:
+                                        Código de Verificación:
                                     </span>
                                     <button
                                         onClick={copiarAlPortapapeles}
@@ -335,13 +335,13 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
                             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                                 <h4 className="font-semibold text-blue-800 mb-2 flex items-center gap-2">
                                     <Shield className="w-4 h-4" />
-                                    InformaciÃ³n de ValidaciÃ³n
+                                    Información de Validación
                                 </h4>
                                 <div className="space-y-1 text-sm text-blue-700">
-                                    <p>â¢ Este certificado fue verificado digitalmente</p>
-                                    <p>â¢ La validez puede ser confirmada en cualquier momento</p>
-                                    <p>â¢ Los datos son autÃ©nticos y provienen del sistema oficial</p>
-                                    <p>â¢ Fecha de validaciÃ³n: {mounted ? new Date().toLocaleString() : 'Cargando...'}</p>
+                                    <p>• Este certificado fue verificado digitalmente</p>
+                                    <p>• La validez puede ser confirmada en cualquier momento</p>
+                                    <p>• Los datos son auténticos y provienen del sistema oficial</p>
+                                    <p>• Fecha de validación: {mounted ? new Date().toLocaleString() : 'Cargando...'}</p>
                                 </div>
                             </div>
 
@@ -376,7 +376,7 @@ export function ValidacionCertificadoClient({ resultado, codigo }: ValidacionCer
             <div className="bg-white border-t border-gray-200 mt-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="text-center text-sm text-gray-500">
-                        <p>Â© 2026 Universidad CatÃ³lica de Pereira - Sistema de Servicio Social</p>
+                        <p>© 2026 Universidad Católica de Pereira - Sistema de Servicio Social</p>
                         <p className="mt-1">
                             Para verificar la autenticidad de este certificado, visite:{' '}
                             <a
