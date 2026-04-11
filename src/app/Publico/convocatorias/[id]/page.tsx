@@ -2,7 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, MapPin, Users, Clock, Building2, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Users, Clock, Building2, CheckCircle, User, ArrowRight } from 'lucide-react';
 import { Navbar } from '@/components/home/Navbar';
 import { Footer } from '@/components/home/Footer';
 
@@ -24,7 +24,7 @@ interface ConvocatoriaDetail {
   cupo_disponible?: number;
   horas_totales_ofrecidas?: number;
   requiere_entrevista: boolean;
-  publicado_por: {
+  publicador: {
     primer_nombre: string;
     primer_apellido: string;
   };
@@ -90,7 +90,7 @@ export default async function ConvocatoriaPage({ params }: { params: { id: strin
     <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      <main className="py-8">
+      <main className="py-8 bg-gradient-to-b from-slate-50 to-white min-h-[calc(100vh-80px)]">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Breadcrumb */}
           <nav className="mb-8">
@@ -112,7 +112,7 @@ export default async function ConvocatoriaPage({ params }: { params: { id: strin
             <div className="lg:col-span-2">
               <article className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Header */}
-                <div className="relative h-48 bg-gradient-to-r from-[#8B1E1E] to-[#6b1818]">
+                <div className="relative h-48 bg-[#8B1E1E]">
                   {convocatoria.categoria?.color_hex && (
                     <div 
                       className="absolute top-4 right-4 px-3 py-1 rounded-full text-white text-xs font-bold"
@@ -122,19 +122,24 @@ export default async function ConvocatoriaPage({ params }: { params: { id: strin
                     </div>
                   )}
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <h1 className="text-3xl font-bold text-white text-center px-4">
+                    <h1 className="text-2xl md:text-3xl font-bold text-white text-center px-6 leading-tight">
                       {convocatoria.titulo}
                     </h1>
                   </div>
+                  {/* Decorative pattern overlay */}
+                  <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_1px_1px,white_1px,transparent_0)] bg-[length:20px_20px]" />
                 </div>
 
                 {/* Contenido */}
                 <div className="p-8">
                   {/* Descripción */}
                   <section className="mb-8">
-                    <h2 className="text-xl font-bold text-gray-900 mb-4">Descripción</h2>
-                    <div className="prose prose-gray max-w-none">
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                    <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                      <span className="w-1 h-5 bg-[#8B1E1E] rounded-full"></span>
+                      Descripción
+                    </h2>
+                    <div className="prose prose-slate max-w-none pl-3">
+                      <p className="text-slate-700 leading-relaxed whitespace-pre-wrap">
                         {convocatoria.descripcion}
                       </p>
                     </div>
@@ -143,8 +148,11 @@ export default async function ConvocatoriaPage({ params }: { params: { id: strin
                   {/* Objetivo */}
                   {convocatoria.objetivo && (
                     <section className="mb-8">
-                      <h2 className="text-xl font-bold text-gray-900 mb-4">Objetivo</h2>
-                      <p className="text-gray-700 leading-relaxed">
+                      <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                        <span className="w-1 h-5 bg-[#8B1E1E] rounded-full"></span>
+                        Objetivo
+                      </h2>
+                      <p className="text-slate-700 leading-relaxed pl-3">
                         {convocatoria.objetivo}
                       </p>
                     </section>
@@ -250,29 +258,44 @@ export default async function ConvocatoriaPage({ params }: { params: { id: strin
                     )}
                   </div>
 
-                  <button
-                    disabled={estaCerrada || !cupoDisponible}
-                    className="w-full mt-4 px-4 py-3 bg-[#8B1E1E] text-white rounded-lg font-semibold hover:bg-[#731919] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {estaCerrada ? 'Postulación Cerrada' : 
-                     !cupoDisponible ? 'No hay cupos disponibles' : 'Postularme'}
-                  </button>
+                  {estaCerrada ? (
+                    <div className="w-full mt-4 px-4 py-3 bg-gray-100 text-gray-500 rounded-lg font-medium text-center border border-gray-200">
+                      <span className="flex items-center justify-center gap-2">
+                        Postulación Cerrada
+                      </span>
+                    </div>
+                  ) : !cupoDisponible ? (
+                    <div className="w-full mt-4 px-4 py-3 bg-amber-50 text-amber-700 rounded-lg font-medium text-center border border-amber-200">
+                      <span className="flex items-center justify-center gap-2">
+                        <Users className="w-4 h-4" />
+                        Cupos completos
+                      </span>
+                    </div>
+                  ) : (
+                    <Link
+                      href={`/login?redirect=/Publico/convocatorias/${convocatoria.id}`}
+                      className="w-full mt-4 px-4 py-3.5 bg-[#8B1E1E] text-white rounded-lg font-semibold hover:bg-[#6b1818] transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2 group"
+                    >
+                      Postularme ahora
+                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                    </Link>
+                  )}
                 </div>
 
                 {/* Información de Contacto */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Publicado por</h3>
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                  <h3 className="text-lg font-bold text-slate-900 mb-4">Publicado por</h3>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                      <span className="text-sm font-bold text-gray-600">
-                        {convocatoria.publicado_por.primer_nombre[0]}{convocatoria.publicado_por.primer_apellido[0]}
-                      </span>
+                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center border border-slate-200">
+                      <User className="w-5 h-5 text-[#8B1E1E]" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {convocatoria.publicado_por.primer_nombre} {convocatoria.publicado_por.primer_apellido}
+                      <p className="text-sm font-semibold text-slate-900">
+                        {convocatoria.publicador?.primer_apellido 
+                          ? `${convocatoria.publicador.primer_apellido}${convocatoria.publicador.primer_nombre ? ', ' + convocatoria.publicador.primer_nombre : ''}`
+                          : (convocatoria.publicador?.primer_nombre || 'Coordinador de Servicio Social')}
                       </p>
-                      <p className="text-xs text-gray-500">Coordinador de Servicio Social</p>
+                      <p className="text-xs text-slate-500">Coordinador de Servicio Social</p>
                     </div>
                   </div>
                 </div>

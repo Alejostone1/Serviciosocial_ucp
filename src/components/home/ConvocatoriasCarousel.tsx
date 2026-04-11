@@ -194,7 +194,7 @@ export function ConvocatoriasCarousel({ initialData }: ConvocatoriasCarouselProp
                                 )}
 
                                 <h2 className="text-4xl font-bold text-slate-900 mb-4">
-                                    Convocatorias <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#8B1E1E] to-[#C0392B]">Abiertas</span>
+                                    Convocatorias <span className="text-[#8B1E1E]">Abiertas</span>
                                 </h2>
                                 <p className="text-lg text-slate-600 leading-relaxed">
                                     Explora las oportunidades disponibles para realizar tu servicio social y aportar al desarrollo de la comunidad.
@@ -241,9 +241,9 @@ export function ConvocatoriasCarousel({ initialData }: ConvocatoriasCarouselProp
                                         key={conv.id || `conv-${idx}`}
                                         className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_calc(50%-12px)] lg:flex-[0_0_calc(33.333%-16px)]"
                                     >
-                                        <div className="group h-full bg-white rounded-2xl border border-slate-100/80 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden">
-                                            {/* Header with gradient */}
-                                            <div className="h-2 bg-gradient-to-r from-[#8B1E1E] to-[#C0392B]" />
+                                        <div className="group h-full bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                                            {/* Header accent */}
+                                            <div className="h-1.5 bg-[#8B1E1E]" />
 
                                             <div className="p-6 flex flex-col h-full">
                                                 {/* Category and hours */}
@@ -307,16 +307,16 @@ export function ConvocatoriasCarousel({ initialData }: ConvocatoriasCarouselProp
                                                 <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-slate-100">
                                                     <Link
                                                         href={`/Publico/convocatorias/${conv.id}`}
-                                                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-all focus:outline-none focus:ring-2 focus:ring-slate-200"
+                                                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-semibold text-slate-700 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 transition-all"
                                                     >
                                                         Ver detalles
                                                     </Link>
                                                     <Link
-                                                        href="/login"
-                                                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-[#8B1E1E] hover:bg-[#731919] hover:shadow-md transition-all gap-1.5 group/btn focus:outline-none focus:ring-2 focus:ring-[#8B1E1E]/30"
+                                                        href={`/login?redirect=/Publico/convocatorias/${conv.id}`}
+                                                        className="inline-flex items-center justify-center px-4 py-2.5 rounded-lg text-sm font-bold text-white bg-[#8B1E1E] hover:bg-[#6b1818] active:bg-[#5a1515] transition-all gap-1.5 group/btn shadow-sm hover:shadow"
                                                     >
                                                         Postularme
-                                                        <CheckCircle2 className="w-4 h-4 group-hover/btn:scale-110 transition-transform" />
+                                                        <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-0.5 transition-transform" />
                                                     </Link>
                                                 </div>
                                             </div>
