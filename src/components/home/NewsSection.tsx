@@ -138,7 +138,7 @@ export function NewsSection({ initialData }: NewsSectionProps) {
                             </div>
 
                             <Link
-                                href="/noticias"
+                                href="/Publico/noticias"
                                 className="group inline-flex items-center gap-2 px-6 py-3 bg-slate-900 text-white text-[13px] font-bold uppercase tracking-widest rounded-xl hover:bg-[#8B1E1E] transition-all shadow-lg shadow-slate-200 active:scale-[0.98]"
                             >
                                 Ver todas las noticias
@@ -157,7 +157,7 @@ export function NewsSection({ initialData }: NewsSectionProps) {
                                     className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 transition-all hover:border-[#8B1E1E]/20 hover:shadow-2xl hover:shadow-slate-200"
                                 >
                                     {/* Elevated Image Section */}
-                                    <Link href={`/noticias/${noticia.slug}`} className="relative aspect-[16/10] overflow-hidden bg-slate-50">
+                                    <Link href={`/Publico/noticias/${noticia.slug}`} className="relative aspect-[16/10] overflow-hidden bg-slate-50">
                                         {noticia.imagenes.length > 0 ? (
                                             <Image
                                                 src={noticia.imagenes[0].url_imagen}
@@ -194,7 +194,7 @@ export function NewsSection({ initialData }: NewsSectionProps) {
                                             </div>
                                         </div>
 
-                                        <Link href={`/noticias/${noticia.slug}`} className="block group/title">
+                                        <Link href={`/Publico/noticias/${noticia.slug}`} className="block group/title">
                                             <h3 className="text-xl font-bold text-slate-900 mb-4 transition-colors group-hover/title:text-[#8B1E1E] leading-tight line-clamp-2">
                                                 {noticia.titulo}
                                             </h3>
@@ -205,7 +205,7 @@ export function NewsSection({ initialData }: NewsSectionProps) {
                                         </p>
 
                                         <Link
-                                            href={`/noticias/${noticia.slug}`}
+                                            href={`/Publico/noticias/${noticia.slug}`}
                                             className="inline-flex items-center gap-2 text-[13px] font-bold text-slate-900 hover:text-[#8B1E1E] transition-colors group/link"
                                         >
                                             <span className="relative">

@@ -90,7 +90,7 @@ export default async function NoticiasPage() {
                                 className="group flex flex-col bg-white rounded-2xl overflow-hidden border border-slate-100 transition-all hover:border-[#8B1E1E]/20 hover:shadow-2xl hover:shadow-slate-200 hover:-translate-y-1"
                             >
                                 {/* Editorial Image */}
-                                <Link href={`/noticias/${noticia.slug}`} className="relative aspect-[16/10] overflow-hidden bg-slate-50">
+                                <Link href={`/Publico/noticias/${noticia.slug}`} className="relative aspect-[16/10] overflow-hidden bg-slate-50">
                                     {noticia.imagenes.length > 0 ? (
                                         <Image
                                             src={noticia.imagenes[0].url_imagen}
@@ -124,7 +124,7 @@ export default async function NoticiasPage() {
                                         </div>
                                     </div>
 
-                                    <Link href={`/noticias/${noticia.slug}`} className="block mb-4">
+                                    <Link href={`/Publico/noticias/${noticia.slug}`} className="block mb-4">
                                         <h3 className="text-xl font-bold text-slate-900 transition-colors group-hover:text-[#8B1E1E] leading-snug line-clamp-2">
                                             {noticia.titulo}
                                         </h3>
@@ -135,7 +135,7 @@ export default async function NoticiasPage() {
                                     </p>
 
                                     <Link
-                                        href={`/noticias/${noticia.slug}`}
+                                        href={`/Publico/noticias/${noticia.slug}`}
                                         className="inline-flex items-center gap-2 text-[13px] font-bold text-slate-900 group/btn transition-colors hover:text-[#8B1E1E]"
                                     >
                                         <span className="border-b-2 border-slate-100 group-hover/btn:border-[#8B1E1E] transition-colors pb-1">

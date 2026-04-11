@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       authors: [noticia.autor],
       images: noticia.imagenes?.map(img => ({
         url: img.url_imagen,
-        alt: img.descripcion || noticia.titulo
+        alt: noticia.titulo
       }))
     }
   };
