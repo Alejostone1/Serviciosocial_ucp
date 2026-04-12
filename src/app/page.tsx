@@ -105,12 +105,12 @@ export default function HomePage() {
           {/* Prioridad 2: Accesos rápidos */}
           <QuickAccess />
 
-          {/* Prioridad 3: Convocatorias (Streamed) */}
+          {/* Prioridad 3: Convocatorias (Streamed via Suspense) */}
           <Suspense fallback={<ConvocatoriasSkeleton />}>
             <ConvocatoriasCarouselWrapper />
           </Suspense>
 
-          {/* Prioridad 4: Noticias (Streamed) */}
+          {/* Prioridad 4: Noticias (Streamed via Suspense) */}
           <Suspense fallback={<NewsSectionSkeleton />}>
             <NewsSectionWrapper />
           </Suspense>
@@ -129,8 +129,21 @@ async function ConvocatoriasCarouselWrapper() {
   return <ConvocatoriasCarousel initialData={data} />;
 }
 
+function formatDateEs(date: Date | null): string {
+  if (!date) return '';
+  return date.toLocaleDateString('es-PE', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
 async function NewsSectionWrapper() {
-  const data = await getNoticias();
+  const raw = await getNoticias();
+  const data = raw.map((n: Record<string, unknown>) => ({
+    ...n,
+    fecha_formateada: formatDateEs(new Date((n.fecha_publicacion || n.creado_en) as string)),
+  }));
   return <NewsSection initialData={data} />;
 }
 

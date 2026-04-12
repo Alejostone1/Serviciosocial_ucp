@@ -25,26 +25,7 @@ interface NotificationContextType {
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 export function NotificationProvider({ children }: { children: ReactNode }) {
-    const [notifications, setNotifications] = useState<Notification[]>([
-        {
-            id: '1',
-            title: '¡Postulación Aceptada!',
-            description: 'Has sido aceptado en "Apoyo Académico Semestre I".',
-            date: new Date(Date.now() - 1000 * 60 * 60 * 2),
-            type: 'success',
-            href: '/estudiante/mis-actividades',
-            unread: true
-        },
-        {
-            id: '2',
-            title: 'Nuevas Convocatorias',
-            description: 'Hay 3 nuevas convocatorias en tu facultad.',
-            date: new Date(Date.now() - 1000 * 60 * 60 * 24),
-            type: 'info',
-            href: '/estudiante/convocatorias',
-            unread: true
-        }
-    ]);
+    const [notifications, setNotifications] = useState<Notification[]>([]);
 
     const unreadCount = notifications.filter(n => n.unread).length;
 
