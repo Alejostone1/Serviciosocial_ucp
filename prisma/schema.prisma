@@ -311,6 +311,23 @@ model Actividad {
   @@map("actividades")
 }
 
+/// Detalles de fechas y horas específicas de un reporte
+model DetalleFechaReporte {
+  id              String        @id @default(uuid()) @db.Uuid
+  id_reporte      String        @db.Uuid
+  fecha           DateTime      @db.Date
+  horas           Decimal       @db.Decimal(5, 2)
+  descripcion     String?       @db.Text
+  creado_en       DateTime      @default(now()) @db.Timestamptz(6)
+
+  reporte         ReporteHoras  @relation(fields: [id_reporte], references: [id], onDelete: Cascade)
+
+  @@index([id_reporte])
+  @@index([fecha])
+  @@index([id_reporte, fecha])
+  @@map("detalles_fechas_reportes")
+}
+
 /// Reportes de horas realizadas por estudiantes en actividades
 model ReporteHoras {
   id                  String        @id @default(uuid()) @db.Uuid
@@ -336,6 +353,7 @@ model ReporteHoras {
   estudiante   Usuario       @relation("ReporteEstudiante", fields: [id_estudiante], references: [id])
   revisor      Usuario?      @relation("ReporteRevisor", fields: [id_revisor], references: [id])
   evidencias   EvidenciaReporte[]
+  detalles_fechas DetalleFechaReporte[]
   historial    HistorialHoras[]
 
   @@index([id_estudiante, estado])
@@ -374,7 +392,7 @@ model EvidenciaReporte {
   @@map("evidencias_reporte")
 }
 
-/// Trazabilidad de cambios en reportes de horas (auditoría)
+/// Historial de modificaciones de horas en reportes de horas (auditoría)
 model HistorialHoras {
   id               String   @id @default(uuid()) @db.Uuid
   id_reporte_horas String   @db.Uuid

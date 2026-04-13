@@ -27,12 +27,23 @@ export async function POST(req: Request) {
     }
 
     const { 
+      // Usuario
       primer_nombre, 
       segundo_nombre, 
       primer_apellido, 
       segundo_apellido, 
+      correo_personal,
       telefono,
-      semestre_actual
+      foto_url,
+      // PerfilEstudiante
+      semestre_actual,
+      codigo_estudiantil,
+      url_hoja_de_vida,
+      habilidades,
+      intereses,
+      disponibilidad,
+      modalidad_preferida,
+      horas_previas
     } = await req.json();
 
     // Crear la solicitud y notificaciones en una transacción
@@ -41,12 +52,23 @@ export async function POST(req: Request) {
         data: {
           id_usuario: (session.user as any).id,
           datos_nuevos: {
+            // Usuario
             primer_nombre,
             segundo_nombre,
             primer_apellido,
             segundo_apellido,
+            correo_personal,
             telefono,
-            semestre_actual
+            foto_url,
+            // PerfilEstudiante
+            semestre_actual,
+            codigo_estudiantil,
+            url_hoja_de_vida,
+            habilidades,
+            intereses,
+            disponibilidad,
+            modalidad_preferida,
+            horas_previas
           },
           estado: 'PENDIENTE'
         }

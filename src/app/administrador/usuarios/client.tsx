@@ -5,7 +5,7 @@ import { DataTable, ColumnDef } from '@/components/ui/data-table';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { 
     Lock, Unlock, Eye, Pencil, Trash2, Power, AlertCircle, 
-    ShieldCheck, ArrowRight, UserPlus, LayoutGrid, List, Mail, Contact
+    ShieldCheck, ArrowRight, UserPlus, LayoutGrid, List, Mail, Contact, FileSpreadsheet
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { eliminarUsuario, cambiarEstadoUsuario } from './actions';
@@ -24,6 +24,10 @@ const NuevoUsuarioModal = dynamic(() => import('./nuevo-usuario-modal').then(mod
 const EditarUsuarioModal = dynamic(() => import('./editar-usuario-modal').then(mod => mod.EditarUsuarioModal), {
     ssr: false,
     loading: () => <div className="h-20 animate-pulse bg-slate-50 flex items-center justify-center rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">Preparando editor...</div>
+});
+
+const CargaMasivaModal = dynamic(() => import('./carga-masiva-modal').then(mod => mod.CargaMasivaModal), {
+    ssr: false,
 });
 
 type UsuarioRow = {
@@ -61,6 +65,7 @@ export function UsuariosTableClient({
     );
     
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCargaMasivaOpen, setIsCargaMasivaOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [userToEdit, setUserToEdit] = useState<UsuarioRow | null>(null);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -259,6 +264,7 @@ export function UsuariosTableClient({
                             <ShieldCheck className="w-4 h-4" />
                             {pendingCount > 0 && <span className="flex items-center gap-2">{pendingCount} Pendientes <div className="w-2 h-2 rounded-full bg-[#8B1E1E] animate-pulse" /></span>}
                         </Link>
+                        <button onClick={() => setIsCargaMasivaOpen(true)} className="px-5 py-2.5 bg-emerald-600 text-white rounded-xl font-bold text-sm hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-md hover:shadow-emerald-900/10"><FileSpreadsheet className="w-4 h-4" /> Carga Masiva</button>
                         <button onClick={() => setIsModalOpen(true)} className="px-6 py-2.5 bg-[#8B1E1E] text-white rounded-xl font-bold text-sm hover:bg-[#721818] transition-all flex items-center gap-2 shadow-md hover:shadow-red-900/10"><UserPlus className="w-4 h-4" /> Nuevo</button>
                     </div>
                 </div>
@@ -343,6 +349,7 @@ export function UsuariosTableClient({
 
             <EditarUsuarioModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSuccess={handleUsuarioActualizado} programas={programas} usuario={userToEdit} />
             <NuevoUsuarioModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={handleNuevoUsuario} programas={programas} />
+            <CargaMasivaModal isOpen={isCargaMasivaOpen} onClose={() => setIsCargaMasivaOpen(false)} onSuccess={() => window.location.reload()} />
             <ConfirmDialog isOpen={isDeleteDialogOpen} onClose={() => setIsDeleteDialogOpen(false)} onConfirm={ejecutarEliminar} title="Eliminar Registro" description={`¿Deseas eliminar permanentemente a ${userToDelete?.correo}?`} confirmText="Sí, Eliminar" type="danger" isLoading={isProcessing} />
             <ConfirmDialog isOpen={showEstadoDialog} onClose={() => setShowEstadoDialog(false)} onConfirm={ejecutarCambioEstado} title={`Cambiar a ${nuevoEstado}`} description={`¿Confirmas cambiar el estado de acceso para ${userToChangeEstado?.correo}?`} confirmText="Sí, Procede" type="warning" isLoading={isProcessing} />
         </div>

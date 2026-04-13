@@ -156,7 +156,86 @@ export async function getReportesRecientes() {
     }
 }
 
-// Crear un nuevo reporte de horas
+// Crear un nuevo reporte de horas con múltiples fechas
+export async function crearReporteHorasConFechas(formData: FormData) {
+    const session = await getServerSession(authOptions);
+    
+    if (!session?.user || session.user.role !== 'ESTUDIANTE') {
+        throw new Error('No autorizado');
+    }
+
+    try {
+        // Extraer datos básicos
+        const id_actividad = formData.get('id_actividad') as string;
+        const descripcion_trabajo = formData.get('descripcion_trabajo') as string;
+        const notas_estudiante = formData.get('notas_estudiante') as string | null || undefined;
+        
+        // Extraer fechas (viene como JSON string)
+        const fechasJson = formData.get('fechas') as string;
+        if (!fechasJson) {
+            throw new Error('Fechas son requeridas');
+        }
+        
+        let fechas;
+        try {
+            fechas = JSON.parse(fechasJson);
+        } catch {
+            throw new Error('Formato de fechas inválido');
+        }
+
+        // Procesar archivos
+        const archivos = formData.getAll('archivos') as File[];
+        let archivos_soporte: UploadedFile[] = [];
+
+        if (archivos && archivos.length > 0) {
+            const archivosValidos = archivos.filter(f => f.size > 0);
+            if (archivosValidos.length > 0) {
+                archivos_soporte = await uploadMultipleFiles(archivosValidos);
+            }
+        }
+
+        // Llamar directamente al servicio
+        const { ReporteHorasService } = await import('@/lib/services/reporte-horas.service');
+        const reporte = await ReporteHorasService.crearConFechas({
+            id_actividad,
+            descripcion_trabajo,
+            notas_estudiante,
+            fechas
+        }, session.user.id);
+
+        // Si hay archivos, crear evidencias
+        if (archivos_soporte.length > 0) {
+            await db.execute(async (prisma) => {
+                await prisma.evidenciaReporte.createMany({
+                    data: archivos_soporte.map(archivo => ({
+                        id_reporte: reporte.id,
+                        tipo: archivo.tipo.startsWith('image/') ? 'IMAGEN' : 'DOCUMENTO',
+                        archivo_url: archivo.url,
+                        archivo_nombre: archivo.nombre,
+                        archivo_mime: archivo.tipo,
+                        peso_bytes: archivo.tamaño
+                    }))
+                });
+            }, 'Error al crear evidencias');
+        }
+
+        // Revalidar rutas
+        revalidatePath('/sistema/estudiante/mis-horas');
+        revalidatePath('/sistema/estudiante/mis-horas/reportar');
+
+        return {
+            success: true,
+            message: `Reporte creado con ${fechas.length} fecha(s)${archivos_soporte.length > 0 ? ` y ${archivos_soporte.length} archivo(s)` : ''}`,
+            data: reporte
+        };
+
+    } catch (error) {
+        console.error('Error en crearReporteHorasConFechas:', error);
+        throw new Error(error instanceof Error ? error.message : 'Error al crear el reporte');
+    }
+}
+
+// Crear un nuevo reporte de horas (función original para compatibilidad)
 export async function crearReporteHoras(formData: FormData) {
     const session = await getServerSession(authOptions);
     

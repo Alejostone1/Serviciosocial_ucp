@@ -14,7 +14,9 @@ import {
     ChevronRight, ArrowLeft, Activity, Layers,
     Target, Search, BookOpen
 } from 'lucide-react';
-import { crearReporteHoras, getActividadesDisponibles, getReportesRecientes, getActividadesConvocatoriasPasadas } from './actions';
+import { crearReporteHoras, crearReporteHorasConFechas, getActividadesDisponibles, getReportesRecientes, getActividadesConvocatoriasPasadas } from './actions';
+import { SelectorFechas, FechaDetalle } from '@/components/reporte-horas/selector-fechas';
+import { ArchivosUploader, ArchivoInfo } from '@/components/reporte-horas/archivos-uploader';
 
 // ─── Schema de validación ─────────────────────────────────────────────────────
 const reporteSchema = z.object({
@@ -83,7 +85,7 @@ const MODAL_LABELS: Record<string, string> = {
 };
 const ESTADO_CONFIG: Record<string, { label: string; color: string }> = {
     APROBADO:             { label: 'Aprobado',    color: 'bg-emerald-100 text-emerald-700' },
-    REPORTADO:            { label: 'En revisión', color: 'bg-amber-100 text-amber-700' },
+    REPORTADO:            { label: 'Pendiente revisión', color: 'bg-amber-100 text-amber-700' },
     VALIDADO_AUXILIAR:    { label: 'Validado',    color: 'bg-blue-100 text-blue-700' },
     RECHAZADO:            { label: 'Rechazado',   color: 'bg-rose-100 text-rose-700' },
     PENDIENTE_VALIDACION: { label: 'Pendiente',   color: 'bg-slate-100 text-slate-600' },
@@ -103,6 +105,8 @@ export default function ReportarHorasClient() {
     const [paso, setPaso] = useState<1 | 2>(1);
     const [actividadesPasadas, setActividadesPasadas] = useState<ActividadPasada[]>([]);
     const [tabActivo, setTabActivo] = useState<'activas' | 'pasadas'>('activas');
+    const [fechas, setFechas] = useState<FechaDetalle[]>([]);
+    const [archivosInfo, setArchivosInfo] = useState<ArchivoInfo[]>([]);
 
     const {
         register, handleSubmit, formState: { errors },
@@ -187,20 +191,32 @@ export default function ReportarHorasClient() {
     // ─── Submit ───────────────────────────────────────────────────────────────
     const onSubmit = async (data: ReporteForm) => {
         if (!actividadSeleccionada) { toast.error('Selecciona una actividad'); return; }
+        
+        // Validar que haya fechas
+        if (fechas.length === 0) {
+            toast.error('Debes agregar al menos una fecha');
+            return;
+        }
+        
         setSubmitting(true);
         try {
             const fd = new FormData();
             fd.append('id_actividad', data.id_actividad);
-            fd.append('horas_reportadas', data.horas_reportadas.toString());
             fd.append('descripcion_trabajo', data.descripcion_trabajo);
             if (data.notas_estudiante) fd.append('notas_estudiante', data.notas_estudiante);
-            if (data.fecha_actividad) fd.append('fecha_actividad', data.fecha_actividad);
-            archivos.forEach(f => fd.append('archivos', f));
+            fd.append('fechas', JSON.stringify(fechas));
+            
+            // Agregar archivos válidos
+            archivosInfo.forEach(a => {
+                if (a.estado !== 'error') {
+                    fd.append('archivos', a.file);
+                }
+            });
 
-            const res = await crearReporteHoras(fd);
+            const res = await crearReporteHorasConFechas(fd);
             if (res.success) {
                 toast.success('¡Reporte enviado correctamente!');
-                reset(); setArchivos([]); setActividadSeleccionada(null); setPaso(1);
+                reset(); setArchivos([]); setArchivosInfo([]); setFechas([]); setActividadSeleccionada(null); setPaso(1);
                 setTimeout(() => router.push('/sistema/estudiante/mis-horas'), 1500);
             }
         } catch (err) {
@@ -479,41 +495,14 @@ export default function ReportarHorasClient() {
                         {/* Formulario */}
                         <form id="reporte-form" onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
                             
-                            {/* Horas + Fecha (grid 2 col) */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Clock className="w-3 h-3" /> Horas Realizadas *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.5"
-                                        min="0.5"
-                                        max="12"
-                                        {...register('horas_reportadas', { valueAsNumber: true })}
-                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-semibold focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none"
-                                        disabled={submitting}
-                                    />
-                                    {errors.horas_reportadas && (
-                                        <p className="text-[10px] text-rose-500 font-bold">{errors.horas_reportadas.message}</p>
-                                    )}
-                                    <p className="text-[10px] text-slate-400">
-                                        Estimadas: <span className="font-bold text-[#8B1E1E]">{actividadSeleccionada.horas_estimadas}h</span>
-                                    </p>
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                        <Calendar className="w-3 h-3" /> Fecha de Actividad
-                                    </label>
-                                    <input
-                                        type="date"
-                                        max={new Date().toISOString().split('T')[0]}
-                                        {...register('fecha_actividad')}
-                                        className="w-full h-11 bg-slate-50 border border-slate-200 rounded-xl px-4 text-sm font-medium focus:ring-4 focus:ring-[#8B1E1E]/5 focus:border-[#8B1E1E]/20 transition-all outline-none"
-                                        disabled={submitting}
-                                    />
-                                </div>
-                            </div>
+                            {/* Selector de Fechas Múltiples */}
+                            <SelectorFechas
+                                fechas={fechas}
+                                onChange={setFechas}
+                                horasEstimadas={actividadSeleccionada.horas_estimadas}
+                                fechaInicio={actividadSeleccionada.fecha_inicio || undefined}
+                                fechaFin={actividadSeleccionada.fecha_limite || undefined}
+                            />
 
                             {/* Descripción */}
                             <div className="space-y-1.5">
@@ -541,38 +530,11 @@ export default function ReportarHorasClient() {
                                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
                                     <Upload className="w-3 h-3" /> Evidencias (Opcional)
                                 </label>
-                                <div className="border-2 border-dashed border-slate-200 rounded-xl p-6 text-center hover:border-[#8B1E1E]/30 transition-colors">
-                                    <input
-                                        type="file" id="evidencias" multiple
-                                        accept=".pdf,.jpg,.jpeg,.png"
-                                        onChange={handleFileChange}
-                                        className="hidden" disabled={submitting}
-                                    />
-                                    <label htmlFor="evidencias" className="cursor-pointer">
-                                        <Upload className="w-5 h-5 text-slate-300 mx-auto mb-2" />
-                                        <p className="text-xs font-semibold text-slate-500">Arrastra o selecciona archivos</p>
-                                        <p className="text-[10px] text-slate-400 mt-1">PDF, JPG, PNG — Máximo 5 MB por archivo</p>
-                                    </label>
-                                </div>
-                                {archivos.length > 0 && (
-                                    <div className="space-y-2 mt-2">
-                                        {archivos.map((f, i) => (
-                                            <div key={i} className="flex items-center justify-between bg-slate-50 rounded-xl px-4 py-3 border border-slate-100">
-                                                <div className="flex items-center gap-3">
-                                                    <File className="w-4 h-4 text-[#8B1E1E]" />
-                                                    <div>
-                                                        <p className="text-xs font-semibold text-slate-700 truncate max-w-[200px]">{f.name}</p>
-                                                        <p className="text-[10px] text-slate-400">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
-                                                    </div>
-                                                </div>
-                                                <button type="button" onClick={() => setArchivos(p => p.filter((_, j) => j !== i))}
-                                                    className="text-slate-300 hover:text-rose-500 transition-colors">
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                <ArchivosUploader
+                                    archivos={archivosInfo}
+                                    onChange={setArchivosInfo}
+                                    maxArchivos={5}
+                                />
                             </div>
 
                             {/* Notas */}
@@ -623,14 +585,14 @@ export default function ReportarHorasClient() {
                             </p>
                             <div className="flex items-baseline gap-1.5">
                                 <span className="text-5xl font-black text-[#8B1E1E] tabular-nums leading-none">
-                                    {watchedHoras || 0}
+                                    {fechas.reduce((sum, f) => sum + (f.horas || 0), 0)}
                                 </span>
                                 <span className="text-lg font-bold text-slate-300">hrs</span>
                             </div>
                             <div className="mt-3 h-1.5 rounded-full bg-slate-100 overflow-hidden">
                                 <div
                                     className="h-full bg-[#8B1E1E] rounded-full transition-all duration-300"
-                                    style={{ width: `${Math.min((watchedHoras / (actividadSeleccionada.horas_estimadas || 8)) * 100, 100)}%` }}
+                                    style={{ width: `${Math.min(((fechas.reduce((sum, f) => sum + (f.horas || 0), 0)) / (actividadSeleccionada.horas_estimadas || 1)) * 100 || 0, 100)}%` }}
                                 />
                             </div>
                             <p className="text-[10px] text-slate-400 mt-1.5">
@@ -646,9 +608,9 @@ export default function ReportarHorasClient() {
                             <div className="space-y-3">
                                 {[
                                     { label: 'Actividad seleccionada', done: true },
-                                    { label: 'Horas definidas', done: watchedHoras > 0 },
+                                    { label: 'Fechas agregadas', done: fechas.length > 0 },
                                     { label: 'Descripción completa', done: watchedDesc.length >= 10 },
-                                    { label: 'Evidencia adjunta', done: archivos.length > 0, optional: true },
+                                    { label: 'Evidencia adjunta', done: archivosInfo.length > 0, optional: true },
                                 ].map((item, i) => (
                                     <div key={i} className="flex items-center gap-3">
                                         <div className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 transition-all ${item.done ? 'bg-emerald-500' : 'bg-slate-100'}`}>

@@ -85,7 +85,7 @@ export default async function MisHorasPage() {
     const getEstadoBadge = (estado: EstadoReporte): { variant: BadgeVariant, label: string } => {
         switch (estado) {
             case EstadoReporte.APROBADO: return { variant: 'success', label: 'Aprobado' };
-            case EstadoReporte.REPORTADO: return { variant: 'warning', label: 'En revisión' };
+            case EstadoReporte.REPORTADO: return { variant: 'warning', label: 'Pendiente revisión' };
             case EstadoReporte.RECHAZADO: return { variant: 'error', label: 'Rechazado' };
             default: return { variant: 'default', label: estado };
         }

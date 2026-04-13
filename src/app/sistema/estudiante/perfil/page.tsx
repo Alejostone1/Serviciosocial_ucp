@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { CalendarioDisponibilidad } from '@/components/calendario-disponibilidad';
 
 export default function PerfilPage() {
     const { user } = useAuth();
@@ -30,21 +31,32 @@ export default function PerfilPage() {
     const [guardando, setGuardando] = useState(false);
     const [solicitudPendiente, setSolicitudPendiente] = useState<any>(null);
 
-    // Form state con campos FIDEDIGNOS (Prisma)
+    // Form state con campos COMPLETOS según modelo Prisma
     const [formData, setFormData] = useState({
+        // Usuario
         primerNombre: '',
         segundoNombre: '',
         primerApellido: '',
         segundoApellido: '',
         correo: '',
+        correoPersonal: '',
         tipoDocumento: '',
         documento: '',
         telefono: '',
+        fotoUrl: '',
+        // Programa (solo lectura)
         carrera: '',
         facultad: '',
+        horasRequeridas: '',
+        // PerfilEstudiante
         semestre: '',
         codigoEstudiantil: '',
-        horasRequeridas: '',
+        urlHojaDeVida: '',
+        habilidades: [] as string[],
+        intereses: [] as string[],
+        disponibilidad: '',
+        modalidadPreferida: '',
+        horasPrevias: '0',
         horasAcumuladas: '0',
         porcentajeAvance: '0',
         ultimoAcceso: 'Recientemente'
@@ -63,14 +75,22 @@ export default function PerfilPage() {
                     primerApellido: user.primer_apellido || '',
                     segundoApellido: user.segundo_apellido || '',
                     correo: user.correo || '',
+                    correoPersonal: user.correo_personal || '',
                     tipoDocumento: user.tipo_documento || 'CC',
                     documento: user.numero_documento || 'N/A',
-                    telefono: user.telefono || '', // ASEGURANDO QUE TRAIGA EL TELÉFONO
+                    telefono: user.telefono || '',
+                    fotoUrl: user.foto_url || '',
                     carrera: programa?.nombre || 'No asignada',
                     facultad: programa?.facultad?.nombre || 'No asignada',
+                    horasRequeridas: programa?.horas_requeridas?.toString() || '180',
                     semestre: perfil?.semestre_actual?.toString() || '1',
                     codigoEstudiantil: perfil?.codigo_estudiantil || 'N/A',
-                    horasRequeridas: programa?.horas_requeridas?.toString() || '180',
+                    urlHojaDeVida: perfil?.url_hoja_de_vida || '',
+                    habilidades: perfil?.habilidades || [],
+                    intereses: perfil?.intereses || [],
+                    disponibilidad: perfil?.disponibilidad ? JSON.stringify(perfil.disponibilidad, null, 2) : '',
+                    modalidadPreferida: perfil?.modalidad_preferida || '',
+                    horasPrevias: perfil?.horas_previas?.toString() || '0',
                     horasAcumuladas: perfil?.horas_acumuladas?.toString() || '0',
                     porcentajeAvance: perfil?.porcentaje_avance?.toString() || '0',
                     ultimoAcceso: user.ultimo_acceso ? new Date(user.ultimo_acceso).toLocaleString('es-CO') : 'Hoy'
@@ -109,12 +129,23 @@ export default function PerfilPage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    // Usuario
                     primer_nombre: formData.primerNombre,
                     segundo_nombre: formData.segundoNombre,
                     primer_apellido: formData.primerApellido,
                     segundo_apellido: formData.segundoApellido,
+                    correo_personal: formData.correoPersonal,
                     telefono: formData.telefono,
-                    semestre_actual: parseInt(formData.semestre)
+                    foto_url: formData.fotoUrl,
+                    // PerfilEstudiante
+                    semestre_actual: parseInt(formData.semestre),
+                    codigo_estudiantil: formData.codigoEstudiantil,
+                    url_hoja_de_vida: formData.urlHojaDeVida,
+                    habilidades: formData.habilidades,
+                    intereses: formData.intereses,
+                    disponibilidad: formData.disponibilidad ? JSON.parse(formData.disponibilidad) : {},
+                    modalidad_preferida: formData.modalidadPreferida,
+                    horas_previas: parseFloat(formData.horasPrevias)
                 })
             });
 
@@ -132,7 +163,7 @@ export default function PerfilPage() {
         }
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
     };
@@ -311,6 +342,129 @@ export default function PerfilPage() {
                                             <option key={s} value={s}>{s}° Semestre Académico</option>
                                         ))}
                                     </select>
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Correo Personal</label>
+                                    <input
+                                        type="email"
+                                        name="correoPersonal"
+                                        value={formData.correoPersonal}
+                                        onChange={handleInputChange}
+                                        placeholder="ejemplo@gmail.com"
+                                        className="w-full px-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#8B1E1E] outline-none text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">URL Foto de Perfil</label>
+                                    <input
+                                        type="url"
+                                        name="fotoUrl"
+                                        value={formData.fotoUrl}
+                                        onChange={handleInputChange}
+                                        placeholder="https://..."
+                                        className="w-full px-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#8B1E1E] outline-none text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Información Académica Extendida */}
+                        <div className="p-10 border border-slate-200 rounded-[3rem] bg-white space-y-10 shadow-sm">
+                            <div className="flex items-center gap-3 pb-6 border-b border-slate-50">
+                                <History className="w-6 h-6 text-[#8B1E1E]" />
+                                <h2 className="text-xl font-semibold text-slate-800">Información Académica Extendida</h2>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Código Estudiantil</label>
+                                    <input
+                                        type="text"
+                                        name="codigoEstudiantil"
+                                        value={formData.codigoEstudiantil}
+                                        onChange={handleInputChange}
+                                        className="w-full px-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#8B1E1E] outline-none text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Modalidad Preferida</label>
+                                    <select
+                                        name="modalidadPreferida"
+                                        value={formData.modalidadPreferida}
+                                        onChange={handleInputChange}
+                                        className="w-full px-6 py-3.5 bg-white border border-slate-200 rounded-2xl outline-none font-bold"
+                                    >
+                                        <option value="">Seleccionar modalidad</option>
+                                        <option value="PRESENCIAL">Presencial</option>
+                                        <option value="VIRTUAL">Virtual</option>
+                                        <option value="HIBRIDA">Híbrida</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-3 md:col-span-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">URL Hoja de Vida</label>
+                                    <input
+                                        type="url"
+                                        name="urlHojaDeVida"
+                                        value={formData.urlHojaDeVida}
+                                        onChange={handleInputChange}
+                                        placeholder="https://drive.google.com/..."
+                                        className="w-full px-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#8B1E1E] outline-none text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-3 md:col-span-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Habilidades (separadas por comas)</label>
+                                    <input
+                                        type="text"
+                                        name="habilidades"
+                                        value={formData.habilidades.join(', ')}
+                                        onChange={(e) => {
+                                            const habilidades = e.target.value.split(',').map(h => h.trim()).filter(h => h);
+                                            setFormData(prev => ({ ...prev, habilidades }));
+                                        }}
+                                        placeholder="Liderazgo, Trabajo en equipo, Comunicación"
+                                        className="w-full px-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#8B1E1E] outline-none text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-3 md:col-span-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Intereses (separados por comas)</label>
+                                    <input
+                                        type="text"
+                                        name="intereses"
+                                        value={formData.intereses.join(', ')}
+                                        onChange={(e) => {
+                                            const intereses = e.target.value.split(',').map(i => i.trim()).filter(i => i);
+                                            setFormData(prev => ({ ...prev, intereses }));
+                                        }}
+                                        placeholder="Tecnología, Educación, Investigación"
+                                        className="w-full px-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#8B1E1E] outline-none text-slate-900 font-bold transition-all"
+                                    />
+                                </div>
+
+                                <div className="space-y-3 md:col-span-2">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Disponibilidad Semanal</label>
+                                    <CalendarioDisponibilidad
+                                        value={formData.disponibilidad}
+                                        onChange={(value) => setFormData(prev => ({ ...prev, disponibilidad: value }))}
+                                    />
+                                </div>
+
+                                <div className="space-y-3">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Horas Previas</label>
+                                    <input
+                                        type="number"
+                                        name="horasPrevias"
+                                        value={formData.horasPrevias}
+                                        onChange={handleInputChange}
+                                        step="0.01"
+                                        min="0"
+                                        className="w-full px-6 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:border-[#8B1E1E] outline-none text-slate-900 font-bold transition-all"
+                                    />
                                 </div>
                             </div>
                         </div>

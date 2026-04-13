@@ -73,7 +73,9 @@ export async function PATCH(
           segundo_nombre: datosNuevos.segundo_nombre,
           primer_apellido: datosNuevos.primer_apellido,
           segundo_apellido: datosNuevos.segundo_apellido,
+          correo_personal: datosNuevos.correo_personal,
           telefono: datosNuevos.telefono,
+          foto_url: datosNuevos.foto_url,
           actualizado_en: new Date()
         }
       }),
@@ -82,6 +84,13 @@ export async function PATCH(
         where: { id_usuario: solicitud.id_usuario },
         data: {
           semestre_actual: datosNuevos.semestre_actual,
+          codigo_estudiantil: datosNuevos.codigo_estudiantil,
+          url_hoja_de_vida: datosNuevos.url_hoja_de_vida,
+          habilidades: datosNuevos.habilidades,
+          intereses: datosNuevos.intereses,
+          disponibilidad: datosNuevos.disponibilidad,
+          modalidad_preferida: datosNuevos.modalidad_preferida,
+          horas_previas: datosNuevos.horas_previas,
           actualizado_en: new Date()
         }
       }),
