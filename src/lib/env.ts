@@ -1,42 +1,36 @@
 // ============================================================
-// VALIDACIÓN SEGURA DE VARIABLES DE ENTORNO
+// VALIDACIÓN SEGURA DE VARIABLES DE ENTORNO (OPTIMIZADO)
 // Sistema Servicio Social UCP
+// Cachea validación para evitar repetición en cada request
 // ============================================================
 
 import { z } from 'zod';
 
-// Esquema de validación — variables críticas obligatorias,
-// resto opcionales para no bloquear el dev server
+// Esquema de validación — variables críticas obligatorias
 const envSchema = z.object({
-  // Base de datos — acepta postgresql:// o postgres:// con cualquier contraseña
   DATABASE_URL: z.string()
     .min(1, "DATABASE_URL es requerida")
     .refine(
       (val) => val.startsWith('postgresql://') || val.startsWith('postgres://'),
       "DATABASE_URL debe empezar con postgresql:// o postgres://"
     ),
-
-  // NextAuth — solo verifica que no esté vacío
   NEXTAUTH_URL: z.string().url("NEXTAUTH_URL debe ser una URL válida"),
   NEXTAUTH_SECRET: z.string().min(10, "NEXTAUTH_SECRET debe tener al menos 10 caracteres"),
-
-  // SMTP — opcionales (el panel funciona sin correo en desarrollo)
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.string().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().optional(),
-
-  // Almacenamiento — opcionales en desarrollo
   UPLOAD_DIR: z.string().optional(),
   UPLOAD_BASE_URL: z.string().optional(),
-
-  // Aplicación
   APP_NAME: z.string().optional(),
   APP_URL: z.string().optional(),
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CERT_BASE_URL: z.string().optional(),
 });
+
+// Cache de validación
+let cachedEnv: ReturnType<typeof getEnvInternal> | null = null;
 
 function validateEnv(): void {
   try {
@@ -51,9 +45,7 @@ function validateEnv(): void {
   }
 }
 
-export function getEnv() {
-  validateEnv();
-
+function getEnvInternal() {
   return {
     database: {
       url: process.env.DATABASE_URL!,
@@ -82,6 +74,14 @@ export function getEnv() {
     isDevelopment: process.env.NODE_ENV === 'development',
     isProduction: process.env.NODE_ENV === 'production',
   };
+}
+
+export function getEnv() {
+  if (cachedEnv) return cachedEnv;
+  
+  validateEnv();
+  cachedEnv = getEnvInternal();
+  return cachedEnv;
 }
 
 export { validateEnv };

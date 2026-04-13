@@ -11,6 +11,32 @@ const PROTECTED_ROUTES: Record<string, string[]> = {
     '/sistema/profesor': ['ADMINISTRADOR', 'PROFESOR'],
 };
 
+// Cache simple para tokens (5 segundos)
+const tokenCache = new Map<string, { token: any; expiry: number }>();
+
+async function getCachedToken(req: NextRequest) {
+  const cacheKey = req.cookies.get('next-auth.session-token')?.value || 
+                   req.cookies.get('__Secure-next-auth.session-token')?.value;
+  
+  if (!cacheKey) return null;
+  
+  const cached = tokenCache.get(cacheKey);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.token;
+  }
+  
+  const token = await getToken({
+    req,
+    secret: process.env.NEXTAUTH_SECRET,
+  });
+  
+  if (token && cacheKey) {
+    tokenCache.set(cacheKey, { token, expiry: Date.now() + 5000 });
+  }
+  
+  return token;
+}
+
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
@@ -22,10 +48,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next();
     }
 
-    const token = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET,
-    });
+    const token = await getCachedToken(request);
 
     if (!token) {
         const loginUrl = new URL('/login', request.url);
