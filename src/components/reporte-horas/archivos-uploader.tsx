@@ -3,6 +3,9 @@
 import React, { useState, useCallback } from 'react';
 import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react';
 
+const tiposPermitidos = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+const tamañoMaximo = 5 * 1024 * 1024; // 5MB
+
 export interface ArchivoInfo {
   id: string;
   file: File;
@@ -23,10 +26,7 @@ export function ArchivosUploader({
 }: ArchivosUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
 
-  const tiposPermitidos = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-  const tamañoMaximo = 5 * 1024 * 1024; // 5MB
-
-  const validarArchivo = (file: File): string | undefined => {
+  const validarArchivo = useCallback((file: File): string | undefined => {
     if (!tiposPermitidos.includes(file.type)) {
       return 'Solo se permiten PDF, JPG y PNG';
     }
@@ -34,23 +34,9 @@ export function ArchivosUploader({
       return 'El archivo supera los 5MB';
     }
     return undefined;
-  };
+  }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const files = Array.from(e.dataTransfer.files);
-    agregarArchivos(files);
-  }, [archivos]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    agregarArchivos(files);
-    e.target.value = ''; // Reset
-  };
-
-  const agregarArchivos = (files: File[]) => {
+  const agregarArchivos = useCallback((files: File[]) => {
     if (archivos.length + files.length > maxArchivos) {
       alert(`Máximo ${maxArchivos} archivos`);
       return;
@@ -67,6 +53,20 @@ export function ArchivosUploader({
     });
 
     onChange([...archivos, ...nuevosArchivos]);
+  }, [archivos, maxArchivos, onChange, validarArchivo]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+
+    const files = Array.from(e.dataTransfer.files);
+    agregarArchivos(files);
+  }, [agregarArchivos]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    agregarArchivos(files);
+    e.target.value = ''; // Reset
   };
 
   const eliminarArchivo = (id: string) => {
